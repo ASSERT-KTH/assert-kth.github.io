@@ -22,6 +22,7 @@ jobs:
         with:
           bundler-cache: true
       
+      # Following the README
       - name: Install python dependencies
         run: pip install bibble
     
