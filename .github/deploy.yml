@@ -1,0 +1,44 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      
+      - name: Install Jekyll
+        run: gem install jekyll
+      
+      - name: Install python dependencies
+        run: pip install bibble
+    
+      - name: Build
+        id: build
+        run: make
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: success()
+        with:
+          allow_empty_commit: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: _site
+          publish_dir: ./
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"
