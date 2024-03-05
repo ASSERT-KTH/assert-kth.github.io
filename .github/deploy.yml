@@ -16,6 +16,17 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
+      
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      
+      - name: Install Jekyll
+        run: gem install jekyll
+      
+      - name: Install python dependencies
+        run: pip install bibble
     
       - name: Build
         id: build
