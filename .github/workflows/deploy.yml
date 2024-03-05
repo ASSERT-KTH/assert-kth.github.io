@@ -17,6 +17,12 @@ jobs:
           fetch-depth: 0
           submodules: true
       
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      
       # Following the README
       - name: Install python dependencies
         run: pip install bibble
