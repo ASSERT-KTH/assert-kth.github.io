@@ -22,9 +22,6 @@ jobs:
         with:
           bundler-cache: true
       
-      - name: Install Jekyll
-        run: gem install jekyll
-      
       - name: Install python dependencies
         run: pip install bibble
     
