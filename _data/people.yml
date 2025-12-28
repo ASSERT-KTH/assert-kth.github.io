@@ -8,16 +8,10 @@ martin:
     role: faculty
     webpage: "https://www.monperrus.net/martin/"
 
-khashayar:
-    display_name: "Khashayar Etemadi"
-    role: grad
-    webpage: "https://khesoem.github.io/"
-
-deepika:
-    display_name: "Deepika Tiwari"
-    role: grad
-    webpage: "https://deee92.github.io/"
-
+larissa:
+    display_name: "Larissa Schmid"
+    role: postdoc
+    
 javierron:
     display_name: "Javier Ron"
     role: grad
@@ -46,24 +40,44 @@ andre:
 sofia:
     display_name: "Sofia Bobadilla"
     role: grad
-    webpage: "https://www.kth.se/profile/sofbob"
-
+    webpage: "https://sofiabobadilla.github.io/"
+vivi:
+    display_name: "Vivi Andersson"
+    role: grad
+    webpage: "https://vivi365.github.io/"
+    
+raphina:
+    display_name: "Raphina Liu"
+    role: engineer
+    webpage: "https://stamp9.github.io/"
 yogya:
     display_name: "Yogya Gamage"
-    role: engineer
+    role: grad
     webpage: "https://www.kth.se/profile/yogya/"
 
 monica:
     display_name: "Mónica Jin"
-    role: engineer
+    role: alum
+    bio: "MSc, now working at Parity Technologies."
     webpage: "https://mokita-j.github.io/"
 
+deepika:
+    display_name: "Deepika Tiwari"
+    role: alum
+    bio: "PhD 2024, now working at System Verification."
+    webpage: "https://deee92.github.io/"
+
+khashayar:
+    display_name: "Khashayar Etemadi"
+    role: alum
+    bio: "PhD 2024, now PostDoc at ETH Zurich."
+    webpage: "https://khesoem.github.io/"
 javier:
     display_name: "Javier Cabrera Arteaga"
     role: alum
     bio: "Ph.D., 2024. Now at Hopsworks."
     webpage: "https://www.jacarte.me/"
-
+    
 zimin:
     display_name: "Zimin Chen"
     role: alum
@@ -79,7 +93,7 @@ cesar:
 heye:
     display_name: "He Ye"
     role: alum
-    bio: "Ph.D., 2023. Now at CMU."
+    bio: "Ph.D., 2023. Now Assistant Professor at UCL."
     webpage: "https://heye.me/"
 
 long:
