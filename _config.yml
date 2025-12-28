@@ -13,8 +13,8 @@ permalink: /blog/:year/:month/:day/:title.html
 roles:
   - key: faculty
     name: Faculty
-      #  - key: postdoc
-      #    name: Researchers
+  - key: postdoc
+    name: PostDoc
   - key: grad
     name: Graduate Students
   - key: engineer
