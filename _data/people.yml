@@ -1,17 +1,29 @@
 benoit:
     display_name: "Benoit Baudry"
     role: faculty
+    image: "/img/people/benoit.jpeg"
     webpage: "https://softwarediversity.eu/"
 
 martin:
     display_name: "Martin Monperrus"
     role: faculty
+    image: "/img/people/martin.jpg"
     webpage: "https://www.monperrus.net/martin/"
 
 larissa:
     display_name: "Larissa Schmid"
     role: postdoc
-    
+
+julien:
+    display_name: "Julien Malka"
+    role: postdoc
+    webpage: "https://luj.fr/"
+
+carmine:
+    display_name: "Carmine Cesarano"
+    role: postdoc
+    webpage: "https://carminecesarano.github.io/"
+
 javierron:
     display_name: "Javier Ron"
     role: grad
@@ -30,6 +42,7 @@ frank:
 aman:
     display_name: "Aman Sharma"
     role: grad
+    image: "/img/people/aman.jpeg"
     webpage: "https://algomaster99.github.io/"
 
 andre:
@@ -40,6 +53,7 @@ andre:
 sofia:
     display_name: "Sofia Bobadilla"
     role: grad
+    image: "/img/people/sofia.jpg"
     webpage: "https://sofiabobadilla.github.io/"
 vivi:
     display_name: "Vivi Andersson"
@@ -48,8 +62,9 @@ vivi:
     
 raphina:
     display_name: "Raphina Liu"
-    role: engineer
+    role: grad
     webpage: "https://stamp9.github.io/"
+
 yogya:
     display_name: "Yogya Gamage"
     role: grad
