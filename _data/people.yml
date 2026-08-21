@@ -49,6 +49,7 @@ vivi:
 raphina:
     display_name: "Raphina Liu"
     role: engineer
+    image: "/img/people/raphina.jpeg"
     webpage: "https://stamp9.github.io/"
 yogya:
     display_name: "Yogya Gamage"
