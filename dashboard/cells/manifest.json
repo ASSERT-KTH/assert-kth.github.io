@@ -51,7 +51,8 @@
       "id": "frank",
       "name": "Frank Garcia",
       "role": "PhD",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/frankrg.jpeg"
     },
     {
       "id": "aman",
@@ -77,7 +78,8 @@
       "id": "vivi",
       "name": "Vivi Andersson",
       "role": "PhD",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/vivi.png"
     },
     {
       "id": "raphina",
