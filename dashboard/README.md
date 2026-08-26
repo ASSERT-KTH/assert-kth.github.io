@@ -19,6 +19,12 @@ monitor.
   2. people — the full roster
   3. one scene per live microfrontend, fullscreen
   4. all microfrontends together
+  5. open master thesis topics (15 minutes — 3x the other scenes) —
+     "Searching for a Master thesis topic? Consider:" — grouped by
+     category, paging through all topics within the scene's time slot. Data comes from `topics.json`, a snapshot of
+     [ASSERT-KTH/topics](https://github.com/ASSERT-KTH/topics) (current/);
+     refresh it anytime with `python3 dashboard/update-topics.py`
+     (needs the `gh` CLI authenticated).
 
   A thin progress strip at the bottom shows the current scene and what comes
   next. Override the scene length for testing with `&secs=10` (seconds).

@@ -220,6 +220,56 @@
     text-transform: uppercase; letter-spacing: .1em;
   }
 
+  /* topics: open master thesis topics */
+  #topics { justify-content: flex-start; gap: 1rem; padding-top: 3vh; }
+  #topics .pitch {
+    font-size: clamp(1.6rem, 4vw, 3rem);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: .02em;
+  }
+  #topics .pitch .consider { color: var(--green); }
+  #topics .cat {
+    font-size: clamp(1rem, 2vw, 1.5rem);
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: .2em;
+    margin-top: .5rem;
+  }
+  #topics .cat::before, #topics .cat::after { content: " ── "; color: var(--line); }
+  #topics .topic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 14px;
+    width: 100%;
+    max-width: 1750px;
+    align-content: start;
+    flex: 1;
+  }
+  .topic-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+  }
+  .topic-card h3 { font-size: clamp(.9rem, 1.4vw, 1.15rem); color: var(--green); line-height: 1.3; }
+  .topic-card h3::before { content: "▪ "; color: var(--green-dim); }
+  .topic-card p {
+    font-size: clamp(.72rem, 1vw, .88rem);
+    color: var(--ink-2);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  #topics .pager { font-size: .75rem; color: var(--ink-3); letter-spacing: .1em; }
+  #topics .pager .src { color: var(--green-dim); }
+
   /* focus: one microfrontend fullscreen */
   body.kiosk main.focus { display: flex; padding: 12px 1.5rem 1.2rem; }
   body.kiosk main.focus .cell { display: none; }
@@ -256,6 +306,7 @@
   body.kiosk[data-scene="splash"] #splash { display: flex; }
   body.kiosk[data-scene="splash"] header { display: none; }
   body.kiosk[data-scene="people"] #people { display: flex; }
+  body.kiosk[data-scene="topics"] #topics { display: flex; }
   body.kiosk[data-scene="all"] main { display: grid; }
   body.kiosk[data-scene="focus"] main.focus { display: flex; }
 </style>
@@ -289,6 +340,13 @@
 <section class="scene" id="people" aria-label="People">
   <h2>People</h2>
   <div class="roster" id="roster"></div>
+</section>
+
+<section class="scene" id="topics" aria-label="Open master thesis topics">
+  <div class="pitch">Searching for a Master thesis topic? <span class="consider">Consider:</span></div>
+  <div class="cat" id="topics-cat"></div>
+  <div class="topic-grid" id="topics-grid"></div>
+  <div class="pager"><span id="topics-page"></span> · <span class="src">github.com/ASSERT-KTH/topics</span></div>
 </section>
 
 <main id="grid" aria-label="Team member cells"></main>
@@ -396,22 +454,57 @@
         p.prepend(makeAvatar(m));
         roster.appendChild(p);
       }
-      if (kiosk) startKiosk(members);
+      if (!kiosk) return;
+      // topics are optional: the kiosk still runs if topics.json is missing
+      fetch('topics.json')
+        .then(r => r.json())
+        .then(data => startKiosk(members, buildTopicPages(data)))
+        .catch(() => startKiosk(members, []));
     })
     .catch(() => {
       grid.innerHTML = '<p style="color:var(--ink-3)">could not load cells/manifest.json — serve this page over http (e.g. <code>make serve</code>), file:// blocks fetch.</p>';
     });
 
   // ── kiosk scene rotation ─────────────────────────────
-  // splash → people → each live microfrontend fullscreen → all → loop.
+  // splash → people → each live microfrontend fullscreen → all → thesis topics → loop.
   // 5 minutes per scene by default; override for testing with ?secs=10
-  function startKiosk(members) {
+  const TOPICS_PER_PAGE = 6;
+
+  function buildTopicPages({ categories }) {
+    const pages = [];
+    for (const cat of categories) {
+      for (let i = 0; i < cat.topics.length; i += TOPICS_PER_PAGE) {
+        pages.push({ category: cat.name, topics: cat.topics.slice(i, i + TOPICS_PER_PAGE) });
+      }
+    }
+    return pages;
+  }
+
+  function renderTopicPage(pages, idx) {
+    const page = pages[idx];
+    document.getElementById('topics-cat').textContent = page.category;
+    document.getElementById('topics-page').textContent = `${idx + 1} / ${pages.length}`;
+    const tg = document.getElementById('topics-grid');
+    tg.innerHTML = '';
+    for (const t of page.topics) {
+      const card = document.createElement('article');
+      card.className = 'topic-card';
+      card.innerHTML = '<h3></h3><p></p>';
+      card.querySelector('h3').textContent = t.title;
+      card.querySelector('p').textContent = t.description;
+      tg.appendChild(card);
+    }
+  }
+
+  function startKiosk(members, topicPages) {
     const SCENE_MS = (parseInt(params.get('secs'), 10) || 300) * 1000;
     const scenes = [
       { kind: 'splash', label: 'ASSERT · KTH · TCS' },
       { kind: 'people', label: 'people' },
       ...members.filter(m => m.cell).map(m => ({ kind: 'focus', id: m.id, label: m.name })),
       { kind: 'all', label: 'all microfrontends' },
+      // topics run 3x longer than the other scenes (15 min at the default 5)
+      ...(topicPages.length ? [{ kind: 'topics', label: 'master thesis topics', ms: 3 * SCENE_MS }] : []),
     ];
     const nameEl = document.getElementById('scene-name');
     const nextEl = document.getElementById('scene-next');
@@ -427,15 +520,24 @@
       nameEl.textContent = sc.label;
       nextEl.textContent = scenes[(idx + 1) % scenes.length].label;
       sceneStart = Date.now();
+      if (sc.kind === 'topics') renderTopicPage(topicPages, 0);
     }
     show(0);
 
+    let topicPage = 0;
     setInterval(() => {
       const elapsed = Date.now() - sceneStart;
-      fillEl.style.width = Math.min(100, elapsed / SCENE_MS * 100) + '%';
-      if (elapsed >= SCENE_MS) {
+      const dur = scenes[i].ms || SCENE_MS;
+      fillEl.style.width = Math.min(100, elapsed / dur * 100) + '%';
+      if (elapsed >= dur) {
         i = (i + 1) % scenes.length;
+        topicPage = 0;
         show(i);
+      } else if (scenes[i].kind === 'topics' && topicPages.length > 1) {
+        // page through categories/topics within the scene's time slot
+        const p = Math.min(topicPages.length - 1,
+                           Math.floor(elapsed / (dur / topicPages.length)));
+        if (p !== topicPage) { topicPage = p; renderTopicPage(topicPages, p); }
       }
     }, 250);
   }
