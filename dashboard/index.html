@@ -197,9 +197,14 @@
 
   /* people: roster overview */
   #people h2 {
-    font-size: .85rem; color: var(--ink-3);
-    text-transform: uppercase; letter-spacing: .25em;
+    font-size: clamp(1.6rem, 4vw, 3rem);
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    margin-bottom: 1rem;
   }
+  #people h2 b { color: var(--green); }
   #people .roster {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -239,35 +244,63 @@
   }
   #topics .cat::before, #topics .cat::after { content: " ── "; color: var(--line); }
   #topics .topic-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-    gap: 14px;
     width: 100%;
     max-width: 1750px;
     align-content: start;
     flex: 1;
   }
-  .topic-card {
+  /* overview page: all titles of one category */
+  #topics .topic-grid.overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(560px, 1fr));
+    gap: 10px 40px;
+  }
+  .topic-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: .8rem;
+    text-align: left;
+    font-size: clamp(1rem, 1.6vw, 1.4rem);
+    color: var(--ink);
+    padding: .5rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .topic-title-row::before { content: "▪"; color: var(--green); }
+  /* detail page: one topic, full description */
+  #topics .topic-grid.detail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  .topic-detail {
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: .9rem 1.1rem;
+    border-radius: 12px;
+    padding: 2.2rem 2.8rem;
+    max-width: 1350px;
     text-align: left;
     display: flex;
     flex-direction: column;
-    gap: .45rem;
+    gap: 1.2rem;
   }
-  .topic-card h3 { font-size: clamp(.9rem, 1.4vw, 1.15rem); color: var(--green); line-height: 1.3; }
-  .topic-card h3::before { content: "▪ "; color: var(--green-dim); }
-  .topic-card p {
-    font-size: clamp(.72rem, 1vw, .88rem);
+  .topic-detail h3 {
+    font-size: clamp(1.3rem, 2.4vw, 2.1rem);
+    color: var(--green);
+    line-height: 1.25;
+  }
+  .topic-detail h3::before { content: "▪ "; color: var(--green-dim); }
+  .topic-detail p {
+    font-size: clamp(.95rem, 1.3vw, 1.2rem);
     color: var(--ink-2);
-    line-height: 1.45;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    line-height: 1.65;
   }
+  #topics .contact {
+    font-size: clamp(.85rem, 1.3vw, 1.1rem);
+    color: var(--ink-2);
+  }
+  #topics .contact b { color: var(--green); font-weight: 700; }
   #topics .pager { font-size: .75rem; color: var(--ink-3); letter-spacing: .1em; }
   #topics .pager .src { color: var(--green-dim); }
 
@@ -339,7 +372,7 @@
 </section>
 
 <section class="scene" id="people" aria-label="People">
-  <h2>People</h2>
+  <h2><b>ASSERT</b> Members</h2>
   <div class="roster" id="roster"></div>
 </section>
 
@@ -347,6 +380,7 @@
   <div class="pitch">Searching for a Master thesis topic? <span class="consider">Consider:</span></div>
   <div class="cat" id="topics-cat"></div>
   <div class="topic-grid" id="topics-grid"></div>
+  <div class="contact">Interested? Reach out to <b>monperrus@kth.se</b></div>
   <div class="pager"><span id="topics-page"></span> · <span class="src">github.com/ASSERT-KTH/topics</span></div>
 </section>
 
@@ -459,8 +493,8 @@
       // topics are optional: the kiosk still runs if topics.json is missing
       fetch('topics.json')
         .then(r => r.json())
-        .then(data => startKiosk(members, buildTopicPages(data)))
-        .catch(() => startKiosk(members, []));
+        .then(data => startKiosk(members, data))
+        .catch(() => startKiosk(members, null));
     })
     .catch(() => {
       grid.innerHTML = '<p style="color:var(--ink-3)">could not load cells/manifest.json — serve this page over http (e.g. <code>make serve</code>), file:// blocks fetch.</p>';
@@ -469,16 +503,24 @@
   // ── kiosk scene rotation ─────────────────────────────
   // splash → people → each live microfrontend fullscreen → all → thesis topics → loop.
   // 5 minutes per scene by default; override for testing with ?secs=10
-  const TOPICS_PER_PAGE = 6;
-
-  function buildTopicPages({ categories }) {
+  // per category: one overview page with all titles, then one page per
+  // topic with the full description. Durations are fractions of the base
+  // scene length so ?secs= scales everything: at the default 5-minute base,
+  // an overview page holds 1 minute and each topic page 2 minutes.
+  function buildTopicPages({ categories }, sceneMs) {
     const pages = [];
     for (const cat of categories) {
-      for (let i = 0; i < cat.topics.length; i += TOPICS_PER_PAGE) {
-        pages.push({ category: cat.name, topics: cat.topics.slice(i, i + TOPICS_PER_PAGE) });
+      pages.push({ type: 'overview', category: cat.name,
+                   topics: cat.topics, ms: sceneMs * 0.2 });
+      for (const t of cat.topics) {
+        pages.push({ type: 'topic', category: cat.name,
+                     topic: t, ms: sceneMs * 0.4 });
       }
     }
-    return pages;
+    // cumulative start times, so the ticker can map elapsed time to a page
+    let acc = 0;
+    for (const p of pages) { p.start = acc; acc += p.ms; }
+    return { pages, totalMs: acc };
   }
 
   function renderTopicPage(pages, idx) {
@@ -487,25 +529,36 @@
     document.getElementById('topics-page').textContent = `${idx + 1} / ${pages.length}`;
     const tg = document.getElementById('topics-grid');
     tg.innerHTML = '';
-    for (const t of page.topics) {
+    if (page.type === 'overview') {
+      tg.className = 'topic-grid overview';
+      for (const t of page.topics) {
+        const row = document.createElement('div');
+        row.className = 'topic-title-row';
+        row.textContent = t.title;
+        tg.appendChild(row);
+      }
+    } else {
+      tg.className = 'topic-grid detail';
       const card = document.createElement('article');
-      card.className = 'topic-card';
+      card.className = 'topic-detail';
       card.innerHTML = '<h3></h3><p></p>';
-      card.querySelector('h3').textContent = t.title;
-      card.querySelector('p').textContent = t.description;
+      card.querySelector('h3').textContent = page.topic.title;
+      card.querySelector('p').textContent = page.topic.description;
       tg.appendChild(card);
     }
   }
 
-  function startKiosk(members, topicPages) {
+  function startKiosk(members, topicData) {
     const SCENE_MS = (parseInt(params.get('secs'), 10) || 300) * 1000;
+    const topicSchedule = topicData ? buildTopicPages(topicData, SCENE_MS) : { pages: [], totalMs: 0 };
+    const topicPages = topicSchedule.pages;
     const scenes = [
       { kind: 'splash', label: 'ASSERT · KTH · TCS' },
       { kind: 'people', label: 'people' },
-      ...members.filter(m => m.cell).map(m => ({ kind: 'focus', id: m.id, label: m.name })),
+      // individual cells hold 2 minutes each (0.4x the 5-minute base)
+      ...members.filter(m => m.cell).map(m => ({ kind: 'focus', id: m.id, label: m.name, ms: SCENE_MS * 0.4 })),
       { kind: 'all', label: 'all microfrontends' },
-      // topics run 3x longer than the other scenes (15 min at the default 5)
-      ...(topicPages.length ? [{ kind: 'topics', label: 'master thesis topics', ms: 3 * SCENE_MS }] : []),
+      ...(topicPages.length ? [{ kind: 'topics', label: 'master thesis topics', ms: topicSchedule.totalMs }] : []),
     ];
     const nameEl = document.getElementById('scene-name');
     const nextEl = document.getElementById('scene-next');
@@ -535,9 +588,9 @@
         topicPage = 0;
         show(i);
       } else if (scenes[i].kind === 'topics' && topicPages.length > 1) {
-        // page through categories/topics within the scene's time slot
-        const p = Math.min(topicPages.length - 1,
-                           Math.floor(elapsed / (dur / topicPages.length)));
+        // find the page whose [start, start+ms) window contains elapsed
+        let p = topicPages.length - 1;
+        while (p > 0 && topicPages[p].start > elapsed) p--;
         if (p !== topicPage) { topicPage = p; renderTopicPage(topicPages, p); }
       }
     }, 250);

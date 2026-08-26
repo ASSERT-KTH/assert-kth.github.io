@@ -1,0 +1,48 @@
+name: Update thesis topics
+
+on:
+  schedule:
+    # daily, 05:17 UTC
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  update:
+    name: refresh topics.json
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Regenerate topics.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 dashboard/update-topics.py
+
+      - name: Commit and push if changed
+        id: commit
+        run: |
+          if git diff --quiet dashboard/topics.json; then
+            echo "topics.json unchanged, nothing to do"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add dashboard/topics.json
+            git commit -m "Update thesis topics from ASSERT-KTH/topics"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # a push made with GITHUB_TOKEN does not trigger the Deploy workflow,
+      # so dispatch it explicitly to rebuild the site
+      - name: Trigger deploy
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref master

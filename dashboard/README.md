@@ -17,11 +17,14 @@ monitor.
   The board becomes a rotating kiosk that loops through scenes, 5 minutes each:
   1. splash — team name, Stockholm time, university, department
   2. people — the full roster
-  3. one scene per live microfrontend, fullscreen
+  3. one scene per live microfrontend, fullscreen (2 minutes each)
   4. all microfrontends together
-  5. open master thesis topics (15 minutes — 3x the other scenes) —
-     "Searching for a Master thesis topic? Consider:" — grouped by
-     category, paging through all topics within the scene's time slot. Data comes from `topics.json`, a snapshot of
+  5. open master thesis topics — "Searching for a Master thesis topic?
+     Consider:" — per category, first an overview page listing all titles
+     (1 minute), then one page per topic with its full description
+     (2 minutes each), with a contact line (monperrus@kth.se) throughout.
+     With 39 topics in 3 categories this scene runs ~81 minutes, making
+     the full loop roughly 1h50. Data comes from `topics.json`, a snapshot of
      [ASSERT-KTH/topics](https://github.com/ASSERT-KTH/topics) (current/);
      refresh it anytime with `python3 dashboard/update-topics.py`
      (needs the `gh` CLI authenticated). A scheduled GitHub Action
