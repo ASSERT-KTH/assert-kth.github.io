@@ -87,11 +87,29 @@
   }
   .cell-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: .6rem;
     padding: .5rem .75rem;
     border-bottom: 1px solid var(--line);
     background: var(--surface-2);
+  }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--green-dim);
+    flex: none;
+  }
+  .avatar.initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    color: var(--green);
+    font-size: .6rem;
+    font-weight: 700;
+    letter-spacing: .05em;
   }
   .cell-head .name { font-size: .85rem; font-weight: 700; color: var(--ink); }
   .cell-head .role {
@@ -190,12 +208,13 @@
     text-align: left;
   }
   #people .person {
-    display: flex; align-items: baseline; gap: .8rem;
+    display: flex; align-items: center; gap: 1rem;
     font-size: clamp(1rem, 2vw, 1.5rem);
-    padding: .35rem 0;
+    padding: .45rem 0;
     border-bottom: 1px solid var(--line);
   }
-  #people .person::before { content: "▪"; color: var(--green); }
+  #people .person .avatar { width: 56px; height: 56px; }
+  #people .person .avatar.initials { font-size: 1rem; }
   #people .person .role  {
     margin-left: auto; font-size: .6em; color: var(--ink-3);
     text-transform: uppercase; letter-spacing: .1em;
@@ -207,6 +226,8 @@
   body.kiosk main.focus .cell.focused { display: flex; flex: 1; min-height: 0; }
   body.kiosk main.focus .cell.focused .cell-head .name { font-size: 1.2rem; }
   body.kiosk main.focus .cell.focused .cell-head .role { font-size: .8rem; }
+  body.kiosk main.focus .cell.focused .avatar { width: 44px; height: 44px; }
+  body.kiosk main.focus .cell.focused .avatar.initials { font-size: .85rem; }
 
   /* scene progress strip */
   #scenebar {
@@ -311,6 +332,24 @@
   const grid = document.getElementById('grid');
   const roster = document.getElementById('roster');
 
+  // photo if the member has one, otherwise a green initials disc;
+  // a broken image path also falls back to initials
+  function makeAvatar(m) {
+    const initials = () => {
+      const el = document.createElement('span');
+      el.className = 'avatar initials';
+      el.textContent = m.name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+      return el;
+    };
+    if (!m.image) return initials();
+    const img = document.createElement('img');
+    img.className = 'avatar';
+    img.src = m.image;
+    img.alt = '';
+    img.onerror = () => img.replaceWith(initials());
+    return img;
+  }
+
   fetch('cells/manifest.json')
     .then(r => r.json())
     .then(({ members }) => {
@@ -326,6 +365,7 @@
           </div>`;
         cell.querySelector('.name').textContent = m.name;
         cell.querySelector('.role').textContent = m.role;
+        cell.querySelector('.cell-head').prepend(makeAvatar(m));
 
         if (m.cell) {
           const frame = document.createElement('iframe');
@@ -353,6 +393,7 @@
         p.innerHTML = `<span class="pname"></span><span class="role"></span>`;
         p.querySelector('.pname').textContent = m.name;
         p.querySelector('.role').textContent = m.role;
+        p.prepend(makeAvatar(m));
         roster.appendChild(p);
       }
       if (kiosk) startKiosk(members);
