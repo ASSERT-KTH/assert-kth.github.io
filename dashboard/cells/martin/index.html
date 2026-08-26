@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
+    --green: #35e07c; --green-dim: #1f9e57;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; padding: 18px; overflow: hidden;
+  }
+  blockquote {
+    font-size: 15px; line-height: 1.5; color: var(--ink);
+    transition: opacity .6s; min-height: 4.5em;
+  }
+  blockquote::before { content: "“"; color: var(--green); font-size: 1.4em; }
+  blockquote::after  { content: "”"; color: var(--green); font-size: 1.4em; }
+  .fade { opacity: 0; }
+  a { color: var(--green-dim); text-decoration: none; font-size: 12px; margin-top: 12px; }
+  a:hover { color: var(--green); }
+</style>
+</head>
+<body>
+  <blockquote id="q"></blockquote>
+  <a href="https://www.monperrus.net/martin/" target="_blank" rel="noopener">monperrus.net/martin →</a>
+<script>
+  const quotes = [
+    'Software never was perfect and won’t get perfect. But is that a license to create garbage?',
+    'The best way to predict a bug is to write a test that finds it first.',
+    'Automated program repair: because every patch deserves a second opinion.',
+    'Reproducibility is a feature. Ship it.',
+  ];
+  const q = document.getElementById('q');
+  let i = 0;
+  function show() {
+    q.classList.add('fade');
+    setTimeout(() => {
+      q.textContent = quotes[i % quotes.length];
+      q.classList.remove('fade');
+      i++;
+    }, 600);
+  }
+  q.textContent = quotes[i++];
+  setInterval(show, 8000);
+</script>
+</body>
+</html>

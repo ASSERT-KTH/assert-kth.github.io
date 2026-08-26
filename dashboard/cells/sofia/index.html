@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
+    --green: #35e07c; --green-dim: #1f9e57; --line: #1d3323;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px; padding: 14px; height: 100vh; overflow: hidden;
+  }
+  .line { margin-bottom: .55em; white-space: pre-wrap; }
+  .prompt { color: var(--green-dim); }
+  .cmd { color: var(--green); }
+  .cursor {
+    display: inline-block; width: .55em; height: 1em;
+    background: var(--green); vertical-align: text-bottom;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .bar { color: var(--ink-2); }
+  .bar b { color: var(--green); font-weight: 400; }
+  .status { color: var(--ink-3); font-style: italic; }
+</style>
+</head>
+<body>
+  <div class="line"><span class="prompt">sofia@assert:~$</span> <span class="cmd" id="typed"></span><span class="cursor"></span></div>
+  <div class="line bar" id="thesis" hidden>thesis <b>[████████████░░░░░░░░]</b> 60%</div>
+  <div class="line status" id="status" hidden></div>
+<script>
+  const cmd = 'cat current-work.txt';
+  const typed = document.getElementById('typed');
+  const statuses = [
+    'currently: software supply chain hardening',
+    'reading: one paper a day keeps reviewer 2 away',
+    'fika status: pending ☕',
+  ];
+  let i = 0;
+  (function type() {
+    if (i <= cmd.length) {
+      typed.textContent = cmd.slice(0, i++);
+      setTimeout(type, 70);
+    } else {
+      document.getElementById('thesis').hidden = false;
+      const st = document.getElementById('status');
+      st.hidden = false;
+      let s = 0;
+      const rotate = () => { st.textContent = '» ' + statuses[s % statuses.length]; s++; };
+      rotate();
+      setInterval(rotate, 6000);
+    }
+  })();
+</script>
+</body>
+</html>

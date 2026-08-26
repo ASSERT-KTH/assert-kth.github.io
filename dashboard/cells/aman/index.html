@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
+    --green: #35e07c; --amber: #e0b435; --line: #1d3323;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px; padding: 14px; height: 100vh; overflow: hidden;
+  }
+  h2 { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+  ul { list-style: none; }
+  li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 0; border-bottom: 1px solid var(--line);
+  }
+  li:last-child { border-bottom: 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .dot.warn { background: var(--amber); }
+  .repo { color: var(--ink); }
+  .state { margin-left: auto; font-size: 11px; color: var(--ink-2); }
+</style>
+</head>
+<body>
+  <h2>build matrix</h2>
+  <ul>
+    <li><span class="dot"></span><span class="repo">classport</span><span class="state">OK · main</span></li>
+    <li><span class="dot"></span><span class="repo">sorald</span><span class="state">OK · main</span></li>
+    <li><span class="dot warn"></span><span class="repo">pankti</span><span class="state">WARN · flaky test</span></li>
+    <li><span class="dot"></span><span class="repo">breaking-updates</span><span class="state">OK · main</span></li>
+  </ul>
+</body>
+</html>

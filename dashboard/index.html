@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASSERT Dashboard — KTH TCS</title>
+<style>
+  :root {
+    --bg:        #060a07;   /* page ground */
+    --surface:   #0b120d;   /* cell surface */
+    --surface-2: #101a12;   /* header chips */
+    --line:      #1d3323;   /* borders */
+    --ink:       #d8f5e0;   /* primary text */
+    --ink-2:     #8fbf9f;   /* secondary text */
+    --ink-3:     #55805f;   /* muted text */
+    --green:     #35e07c;   /* accent */
+    --green-dim: #1f9e57;
+    --amber:     #e0b435;   /* status: awaiting */
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "JetBrains Mono", "Fira Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── header ─────────────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; flex-direction: column; gap: .2rem; }
+  .brand .team {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--green);
+  }
+  .brand .team::before { content: "▚ "; color: var(--green-dim); }
+  .brand .affil {
+    font-size: .8rem;
+    color: var(--ink-2);
+    letter-spacing: .04em;
+  }
+  .spacer { flex: 1; }
+  .clock { text-align: right; line-height: 1.15; }
+  .clock .time {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--green);
+    font-variant-numeric: tabular-nums;
+  }
+  .clock .time .sec { color: var(--green-dim); font-size: 1.3rem; }
+  .clock .date {
+    font-size: .78rem;
+    color: var(--ink-2);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .clock .tz { font-size: .7rem; color: var(--ink-3); }
+
+  /* ── grid ───────────────────────────────────────────── */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+    padding: 12px 1.5rem 1.2rem;
+    align-content: start;
+  }
+  .cell {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 230px;
+  }
+  .cell-head {
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  .cell-head .name { font-size: .85rem; font-weight: 700; color: var(--ink); }
+  .cell-head .role {
+    font-size: .65rem;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-left: auto;
+  }
+  .cell iframe {
+    border: 0;
+    width: 100%;
+    flex: 1;
+    background: var(--surface);
+  }
+  .cell .placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    color: var(--ink-3);
+    font-size: .78rem;
+    text-align: center;
+    padding: 1rem;
+  }
+  .placeholder .status { color: var(--amber); }
+  .placeholder .status::before { content: "◌ "; }
+  .placeholder code {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .15rem .4rem;
+    color: var(--ink-2);
+    font-size: .72rem;
+  }
+
+  footer {
+    padding: .5rem 1.5rem .8rem;
+    font-size: .68rem;
+    color: var(--ink-3);
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  footer a { color: var(--green-dim); text-decoration: none; }
+  footer a:hover { color: var(--green); }
+
+  /* ── kiosk scenes (monitor mode only) ───────────────── */
+  .scene {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  /* splash: team · time · university · department */
+  #splash .team-big {
+    font-size: clamp(3rem, 10vw, 8rem);
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--green);
+  }
+  #splash .team-big::before { content: "▚ "; color: var(--green-dim); }
+  #splash .team-sub { font-size: clamp(.9rem, 2vw, 1.4rem); color: var(--ink-2); letter-spacing: .1em; }
+  #splash .time-big {
+    font-size: clamp(3rem, 9vw, 7rem);
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    margin-top: 1rem;
+  }
+  #splash .time-big .sec { color: var(--green-dim); font-size: .5em; }
+  #splash .date-big { font-size: clamp(.9rem, 2vw, 1.3rem); color: var(--ink-2); text-transform: uppercase; letter-spacing: .1em; }
+  #splash .affil-big { margin-top: 1.5rem; line-height: 1.7; }
+  #splash .affil-big .uni  { font-size: clamp(1.1rem, 2.6vw, 1.8rem); color: var(--ink); }
+  #splash .affil-big .dept { font-size: clamp(.85rem, 2vw, 1.3rem); color: var(--ink-3); }
+
+  /* people: roster overview */
+  #people h2 {
+    font-size: .85rem; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .25em;
+  }
+  #people .roster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: .6rem 2.5rem;
+    max-width: 1400px;
+    width: 100%;
+    text-align: left;
+  }
+  #people .person {
+    display: flex; align-items: baseline; gap: .8rem;
+    font-size: clamp(1rem, 2vw, 1.5rem);
+    padding: .35rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  #people .person::before { content: "▪"; color: var(--green); }
+  #people .person .role  {
+    margin-left: auto; font-size: .6em; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .1em;
+  }
+
+  /* focus: one microfrontend fullscreen */
+  body.kiosk main.focus { display: flex; padding: 12px 1.5rem 1.2rem; }
+  body.kiosk main.focus .cell { display: none; }
+  body.kiosk main.focus .cell.focused { display: flex; flex: 1; min-height: 0; }
+  body.kiosk main.focus .cell.focused .cell-head .name { font-size: 1.2rem; }
+  body.kiosk main.focus .cell.focused .cell-head .role { font-size: .8rem; }
+
+  /* scene progress strip */
+  #scenebar {
+    display: none;
+    align-items: center;
+    gap: .8rem;
+    padding: .4rem 1.5rem .6rem;
+    font-size: .7rem;
+    color: var(--ink-3);
+    border-top: 1px solid var(--line);
+  }
+  #scenebar .track {
+    flex: 1; height: 3px; background: var(--surface-2);
+    border-radius: 2px; overflow: hidden;
+  }
+  #scenebar .fill { height: 100%; width: 0; background: var(--green-dim); }
+  #scenebar .next { color: var(--ink-3); }
+  #scenebar .next b { color: var(--ink-2); font-weight: 400; }
+
+  /* monitor mode: kiosk on, footer off, bigger tiles in the "all" scene */
+  body.kiosk { font-size: 1.1rem; }
+  body.kiosk footer { display: none; }
+  body.kiosk #scenebar { display: flex; }
+  body.kiosk main { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+  body.kiosk main, body.kiosk .scene { display: none; }
+  body.kiosk[data-scene="splash"] #splash { display: flex; }
+  body.kiosk[data-scene="splash"] header { display: none; }
+  body.kiosk[data-scene="people"] #people { display: flex; }
+  body.kiosk[data-scene="all"] main { display: grid; }
+  body.kiosk[data-scene="focus"] main.focus { display: flex; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="team">ASSERT</div>
+    <div class="affil">KTH Royal Institute of Technology · Division of Theoretical Computer Science (TCS)</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="clock">
+    <div class="time js-time">--:--<span class="sec">:--</span></div>
+    <div class="date js-date">&nbsp;</div>
+    <div class="tz">Stockholm · Europe/Stockholm</div>
+  </div>
+</header>
+
+<section class="scene" id="splash" aria-label="Team">
+  <div class="team-big">ASSERT</div>
+  <div class="team-sub">AweSome SoftwarE Research Team</div>
+  <div class="time-big js-time">--:--<span class="sec">:--</span></div>
+  <div class="date-big js-date">&nbsp;</div>
+  <div class="affil-big">
+    <div class="uni">KTH Royal Institute of Technology</div>
+    <div class="dept">Division of Theoretical Computer Science · TCS</div>
+  </div>
+</section>
+
+<section class="scene" id="people" aria-label="People">
+  <h2>People</h2>
+  <div class="roster" id="roster"></div>
+</section>
+
+<main id="grid" aria-label="Team member cells"></main>
+
+<div id="scenebar">
+  <span id="scene-name">grid</span>
+  <div class="track"><div class="fill" id="scene-fill"></div></div>
+  <span class="next">next: <b id="scene-next"></b></span>
+</div>
+
+<footer>
+  <span>ASSERT team dashboard — prototype</span>
+  <span>each tile is a member-owned microfrontend: <code>dashboard/cells/&lt;id&gt;/</code></span>
+  <a href="/">assert-kth.github.io</a>
+</footer>
+
+<script>
+  // ── Stockholm clock ──────────────────────────────────
+  const timeFmt = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  const dateFmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Stockholm', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+  function tick() {
+    const now = new Date();
+    const [h, m, s] = timeFmt.format(now).split(':');
+    document.querySelectorAll('.js-time').forEach(el =>
+      el.innerHTML = `${h}:${m}<span class="sec">:${s}</span>`);
+    document.querySelectorAll('.js-date').forEach(el =>
+      el.textContent = dateFmt.format(now));
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ── load members, build grid + roster ────────────────
+  const params = new URLSearchParams(location.search);
+  const kiosk = params.has('monitor');
+  if (kiosk) document.body.classList.add('kiosk');
+
+  const grid = document.getElementById('grid');
+  const roster = document.getElementById('roster');
+
+  fetch('cells/manifest.json')
+    .then(r => r.json())
+    .then(({ members }) => {
+      for (const m of members) {
+        // grid tile
+        const cell = document.createElement('section');
+        cell.className = 'cell';
+        cell.dataset.id = m.id;
+        cell.innerHTML = `
+          <div class="cell-head">
+            <span class="name"></span>
+            <span class="role"></span>
+          </div>`;
+        cell.querySelector('.name').textContent = m.name;
+        cell.querySelector('.role').textContent = m.role;
+
+        if (m.cell) {
+          const frame = document.createElement('iframe');
+          // sandboxed: a member's cell can run scripts but cannot touch the
+          // dashboard page, other cells, or navigate the monitor away
+          frame.sandbox = 'allow-scripts allow-popups';
+          frame.loading = 'lazy';
+          frame.title = `${m.name} — personal cell`;
+          frame.src = `cells/${m.id}/index.html`;
+          cell.appendChild(frame);
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'placeholder';
+          ph.innerHTML = `
+            <div class="status">awaiting prompt</div>
+            <div>define yours in</div>
+            <code>dashboard/cells/${m.id}/prompt.md</code>`;
+          cell.appendChild(ph);
+        }
+        grid.appendChild(cell);
+
+        // roster row for the people scene
+        const p = document.createElement('div');
+        p.className = 'person';
+        p.innerHTML = `<span class="pname"></span><span class="role"></span>`;
+        p.querySelector('.pname').textContent = m.name;
+        p.querySelector('.role').textContent = m.role;
+        roster.appendChild(p);
+      }
+      if (kiosk) startKiosk(members);
+    })
+    .catch(() => {
+      grid.innerHTML = '<p style="color:var(--ink-3)">could not load cells/manifest.json — serve this page over http (e.g. <code>make serve</code>), file:// blocks fetch.</p>';
+    });
+
+  // ── kiosk scene rotation ─────────────────────────────
+  // splash → people → each live microfrontend fullscreen → all → loop.
+  // 5 minutes per scene by default; override for testing with ?secs=10
+  function startKiosk(members) {
+    const SCENE_MS = (parseInt(params.get('secs'), 10) || 300) * 1000;
+    const scenes = [
+      { kind: 'splash', label: 'ASSERT · KTH · TCS' },
+      { kind: 'people', label: 'people' },
+      ...members.filter(m => m.cell).map(m => ({ kind: 'focus', id: m.id, label: m.name })),
+      { kind: 'all', label: 'all microfrontends' },
+    ];
+    const nameEl = document.getElementById('scene-name');
+    const nextEl = document.getElementById('scene-next');
+    const fillEl = document.getElementById('scene-fill');
+    let i = 0, sceneStart = 0;
+
+    function show(idx) {
+      const sc = scenes[idx];
+      document.body.dataset.scene = sc.kind === 'focus' ? 'focus' : sc.kind;
+      grid.classList.toggle('focus', sc.kind === 'focus');
+      grid.querySelectorAll('.cell').forEach(c =>
+        c.classList.toggle('focused', sc.kind === 'focus' && c.dataset.id === sc.id));
+      nameEl.textContent = sc.label;
+      nextEl.textContent = scenes[(idx + 1) % scenes.length].label;
+      sceneStart = Date.now();
+    }
+    show(0);
+
+    setInterval(() => {
+      const elapsed = Date.now() - sceneStart;
+      fillEl.style.width = Math.min(100, elapsed / SCENE_MS * 100) + '%';
+      if (elapsed >= SCENE_MS) {
+        i = (i + 1) % scenes.length;
+        show(i);
+      }
+    }, 250);
+  }
+</script>
+</body>
+</html>
