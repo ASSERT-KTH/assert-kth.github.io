@@ -332,7 +332,16 @@
   #scenebar .next b { color: var(--ink-2); font-weight: 400; }
 
   /* monitor mode: kiosk on, footer off, bigger tiles in the "all" scene */
-  body.kiosk { font-size: 1.1rem; }
+  body.kiosk { font-size: 1.1rem; cursor: none; }
+  /* invisible full-screen layer: hides the cursor over iframes too (the
+     kiosk is non-interactive, so swallowing pointer events is fine) */
+  body.kiosk::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    cursor: none;
+  }
   body.kiosk footer { display: none; }
   body.kiosk #scenebar { display: flex; }
   body.kiosk main { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
