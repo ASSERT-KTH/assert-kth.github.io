@@ -24,7 +24,10 @@ monitor.
      category, paging through all topics within the scene's time slot. Data comes from `topics.json`, a snapshot of
      [ASSERT-KTH/topics](https://github.com/ASSERT-KTH/topics) (current/);
      refresh it anytime with `python3 dashboard/update-topics.py`
-     (needs the `gh` CLI authenticated).
+     (needs the `gh` CLI authenticated). A scheduled GitHub Action
+     (`.github/workflows/update-topics.yml`) runs it daily, commits the
+     result when it changed, and triggers a site rebuild — so the monitor
+     follows the topics repo without anyone touching the dashboard.
 
   A thin progress strip at the bottom shows the current scene and what comes
   next. Override the scene length for testing with `&secs=10` (seconds).
