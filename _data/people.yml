@@ -37,6 +37,7 @@ yuxin:
 frank:
     display_name: "Frank Garcia"
     role: grad
+    image: "/img/people/frankrg.jpeg"
     webpage: "https://www.kth.se/profile/frankrg"
 
 aman:
@@ -58,6 +59,7 @@ sofia:
 vivi:
     display_name: "Vivi Andersson"
     role: grad
+    image: "/img/people/vivi.png"
     webpage: "https://vivi365.github.io/"
     
 raphina:

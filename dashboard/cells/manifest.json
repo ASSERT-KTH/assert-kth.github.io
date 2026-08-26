@@ -1,0 +1,98 @@
+{
+  "team": "ASSERT — AweSome SoftwarE Research Team",
+  "university": "KTH Royal Institute of Technology",
+  "department": "Division of Theoretical Computer Science (TCS)",
+  "members": [
+    {
+      "id": "benoit",
+      "name": "Benoit Baudry",
+      "role": "Faculty",
+      "cell": false,
+      "image": "/img/people/benoit.jpeg"
+    },
+    {
+      "id": "martin",
+      "name": "Martin Monperrus",
+      "role": "Faculty",
+      "cell": true,
+      "image": "/img/people/martin.jpg"
+    },
+    {
+      "id": "larissa",
+      "name": "Larissa Schmid",
+      "role": "PostDoc",
+      "cell": false
+    },
+    {
+      "id": "julien",
+      "name": "Julien Malka",
+      "role": "PostDoc",
+      "cell": false
+    },
+    {
+      "id": "carmine",
+      "name": "Carmine Cesarano",
+      "role": "PostDoc",
+      "cell": false
+    },
+    {
+      "id": "javierron",
+      "name": "Javier Ron",
+      "role": "PhD",
+      "cell": false
+    },
+    {
+      "id": "yuxin",
+      "name": "Yuxin Liu",
+      "role": "PhD",
+      "cell": false
+    },
+    {
+      "id": "frank",
+      "name": "Frank Garcia",
+      "role": "PhD",
+      "cell": false,
+      "image": "/img/people/frankrg.jpeg"
+    },
+    {
+      "id": "aman",
+      "name": "Aman Sharma",
+      "role": "PhD",
+      "cell": true,
+      "image": "/img/people/aman.jpeg"
+    },
+    {
+      "id": "andre",
+      "name": "André Silva",
+      "role": "PhD",
+      "cell": false
+    },
+    {
+      "id": "sofia",
+      "name": "Sofia Bobadilla",
+      "role": "PhD",
+      "cell": true,
+      "image": "/img/people/sofia.jpg"
+    },
+    {
+      "id": "vivi",
+      "name": "Vivi Andersson",
+      "role": "PhD",
+      "cell": false,
+      "image": "/img/people/vivi.png"
+    },
+    {
+      "id": "raphina",
+      "name": "Raphina Liu",
+      "role": "PhD",
+      "cell": false,
+      "image": "/img/people/raphina.jpeg"
+    },
+    {
+      "id": "yogya",
+      "name": "Yogya Gamage",
+      "role": "PhD",
+      "cell": false
+    }
+  ]
+}

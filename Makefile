@@ -5,12 +5,15 @@ all: build
 
 BIBBLE = bibble
 
+# use system bundler if present, otherwise the copy vendored in vendor/bundle
+BUNDLE ?= $(shell command -v bundle 2>/dev/null || echo ruby $(wildcard vendor/bundle/ruby/*/bin/bundle))
+
 _includes/pubs.html: bib/pubs.bib bib/publications.tmpl
 	mkdir -p _includes
 	$(BIBBLE) $+ > $@
 
 build: _includes/pubs.html
-	bundle exec jekyll build
+	$(BUNDLE) exec jekyll build
 
 # you can configure these at the shell, e.g.:
 # SERVE_PORT=5001 make serve
@@ -18,7 +21,7 @@ SERVE_HOST ?= 127.0.0.1
 SERVE_PORT ?= 5000
 
 serve: _includes/pubs.html
-	jekyll serve --port $(SERVE_PORT) --host $(SERVE_HOST)
+	$(BUNDLE) exec jekyll serve --port $(SERVE_PORT) --host $(SERVE_HOST)
 
 clean:
 	$(RM) -r _site _includes/pubs.html

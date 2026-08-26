@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+  # allows the update-topics workflow (and maintainers) to trigger a rebuild
+  workflow_dispatch:
 
 jobs:
   deploy:
