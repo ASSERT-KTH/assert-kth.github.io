@@ -5,34 +5,74 @@
 <style>
   :root {
     --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
-    --green: #35e07c; --amber: #e0b435; --line: #1d3323;
+    --green: #35e07c; --green-dim: #1f9e57;
   }
   * { margin: 0; box-sizing: border-box; }
   body {
     background: var(--bg); color: var(--ink);
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 13px; padding: 14px; height: 100vh; overflow: hidden;
+    height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; padding: 18px; overflow: hidden;
   }
-  h2 { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
-  ul { list-style: none; }
-  li {
-    display: flex; align-items: center; gap: 8px;
-    padding: 5px 0; border-bottom: 1px solid var(--line);
+  blockquote {
+    font-size: 14px; line-height: 1.5; color: var(--ink);
+    transition: opacity .6s; min-height: 4.5em;
   }
-  li:last-child { border-bottom: 0; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-  .dot.warn { background: var(--amber); }
-  .repo { color: var(--ink); }
-  .state { margin-left: auto; font-size: 11px; color: var(--ink-2); }
+  blockquote::before { content: "“"; color: var(--green); font-size: 1.4em; }
+  blockquote::after  { content: "”"; color: var(--green); font-size: 1.4em; }
+  cite {
+    display: block; font-style: normal; font-size: 11px;
+    color: var(--ink-3); margin-top: 6px; transition: opacity .6s;
+  }
+  .fade { opacity: 0; }
+  a { color: var(--green-dim); text-decoration: none; font-size: 12px; margin-top: 12px; }
+  a:hover { color: var(--green); }
 </style>
 </head>
 <body>
-  <h2>build matrix</h2>
-  <ul>
-    <li><span class="dot"></span><span class="repo">classport</span><span class="state">OK · main</span></li>
-    <li><span class="dot"></span><span class="repo">sorald</span><span class="state">OK · main</span></li>
-    <li><span class="dot warn"></span><span class="repo">pankti</span><span class="state">WARN · flaky test</span></li>
-    <li><span class="dot"></span><span class="repo">breaking-updates</span><span class="state">OK · main</span></li>
-  </ul>
+  <blockquote id="q"></blockquote>
+  <cite id="c"></cite>
+  <a href="https://algomaster99.github.io/publications" target="_blank" rel="noopener">algomaster99.github.io →</a>
+<script>
+  const papers = [
+    ['Trusting-Trust Attack against an Entire Linux Distribution through Binary Manipulation', '2026'],
+    ['Dependencies that Bundle Code and Execution', '2026'],
+    ['zkSBOM: Privacy-Preserving SBOM Sharing with Zero-Knowledge Sets', '2026'],
+    ['Classport: Designing Runtime Dependency Introspection for Java', '2025'],
+    ['Build and Runtime Integrity for Java', '2025'],
+    ['Causes and Canonicalization of Unreproducible Builds in Java', '2025'],
+    ['SBOM.EXE: Countering Dynamic Code Injection based on Software Bill of Materials in Java', '2024'],
+    ['Maven-Hijack: Software Supply Chain Attack Exploiting Packaging Order', '2024 · SCORED Distinguished Paper'],
+    ['Software Bill of Materials in Java', '2023'],
+    ['Challenges of Producing Software Bill of Materials for Java', '2023'],
+    ['Augmenting Diffs With Runtime Information', '2022'],
+    ['UPPERCASE IS ALL YOU NEED', ''],
+  ];
+  const q = document.getElementById('q');
+  const c = document.getElementById('c');
+  let last = -1;
+  function pick() {
+    let i;
+    do { i = Math.floor(Math.random() * papers.length); } while (i === last && papers.length > 1);
+    last = i;
+    return papers[i];
+  }
+  function render() {
+    const [title, year] = pick();
+    q.textContent = title;
+    c.textContent = year;
+  }
+  function show() {
+    q.classList.add('fade');
+    c.classList.add('fade');
+    setTimeout(() => {
+      render();
+      q.classList.remove('fade');
+      c.classList.remove('fade');
+    }, 600);
+  }
+  render();
+  setInterval(show, 8000);
+</script>
 </body>
 </html>
