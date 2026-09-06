@@ -21,7 +21,7 @@ jobs:
 
       - name: Regenerate topics.json
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOPICS_READ_TOKEN }}
         run: python3 dashboard/update-topics.py
 
       - name: Commit and push if changed
