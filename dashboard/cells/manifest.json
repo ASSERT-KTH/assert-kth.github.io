@@ -78,7 +78,7 @@
       "id": "vivi",
       "name": "Vivi Andersson",
       "role": "PhD",
-      "cell": false,
+      "cell": true,
       "image": "/img/people/vivi.png"
     },
     {
