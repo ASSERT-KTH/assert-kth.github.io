@@ -12,16 +12,19 @@
     background: var(--bg); color: var(--ink);
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     height: 100vh; display: flex; flex-direction: column;
-    justify-content: center; padding: 18px; overflow: hidden;
+    justify-content: center; padding: 5vmin; overflow: hidden;
+    /* sizes follow the cell's frame, so text grows in the fullscreen
+       monitor scene and stays compact in the grid tile */
+    font-size: clamp(13px, 1.6vw + 1.6vh, 48px);
   }
   blockquote {
-    font-size: 15px; line-height: 1.5; color: var(--ink);
+    font-size: 1.15em; line-height: 1.5; color: var(--ink); max-width: 32em;
     transition: opacity .6s; min-height: 4.5em;
   }
   blockquote::before { content: "“"; color: var(--green); font-size: 1.4em; }
   blockquote::after  { content: "”"; color: var(--green); font-size: 1.4em; }
   .fade { opacity: 0; }
-  a { color: var(--green-dim); text-decoration: none; font-size: 12px; margin-top: 12px; }
+  a { color: var(--green-dim); text-decoration: none; font-size: .9em; margin-top: .9em; }
   a:hover { color: var(--green); }
 </style>
 </head>

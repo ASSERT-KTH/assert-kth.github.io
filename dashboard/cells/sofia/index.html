@@ -11,12 +11,15 @@
   body {
     background: var(--bg); color: var(--ink);
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 13px; height: 100vh; overflow: hidden;
+    /* sizes follow the cell's frame, so the panda grows in the fullscreen
+       monitor scene and stays compact in the grid tile */
+    font-size: clamp(12px, 1.2vw + 1.2vh, 32px);
+    height: 100vh; overflow: hidden;
     display: flex; align-items: center; justify-content: center;
-    padding: 14px;
+    padding: 4vmin;
   }
-  .panda-row { display: flex; align-items: center; gap: 14px; max-width: 640px; }
-  .panda-row svg { flex: none; }
+  .panda-row { display: flex; align-items: center; gap: 1.1em; max-width: min(100%, 60em); }
+  .panda-row svg { flex: none; width: clamp(90px, 60vmin - 70px, 540px); height: auto; }
   .bubble {
     position: relative;
     background: #0f1811;
@@ -25,13 +28,12 @@
     padding: .8em 1em;
     color: var(--ink-2);
     line-height: 1.55;
-    font-size: 12.5px;
   }
   .bubble::before {
     content: "";
     position: absolute;
-    left: -7px; top: 32px;
-    border: 7px solid transparent;
+    left: -.55em; top: 2.5em;
+    border: .55em solid transparent;
     border-left: 0;
     border-right-color: var(--line);
   }
@@ -45,7 +47,7 @@
 </head>
 <body>
   <div class="panda-row">
-    <svg width="100" height="107" viewBox="0 0 86 92" role="img" aria-label="A black and white panda">
+    <svg viewBox="0 0 86 94" role="img" aria-label="A black and white panda">
       <!-- ears -->
       <circle cx="18" cy="16" r="12" fill="#0a0a0a"/>
       <circle cx="68" cy="16" r="12" fill="#0a0a0a"/>
