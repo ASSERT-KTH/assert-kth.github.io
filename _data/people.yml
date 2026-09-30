@@ -18,16 +18,19 @@ julien:
 carmine:
     display_name: "Carmine Cesarano"
     role: postdoc
+    image: "/img/people/carmine.jpeg"
     webpage: "https://carminecesarano.github.io/"
 
 javierron:
     display_name: "Javier Ron"
     role: grad
+    image: "/img/people/javierron.png"
     webpage: "https://www.kth.se/profile/javierro"
 
 yuxin:
     display_name: "Yuxin Liu"
     role: grad
+    image: "/img/people/yuxin.jpeg"
     webpage: "https://www.kth.se/profile/yuxinli"
 
 frank:
@@ -45,6 +48,7 @@ aman:
 andre:
     display_name: "André Silva"
     role: grad
+    image: "/img/people/andre.jpeg"
     webpage: "https://andre15silva.github.io/"
 
 sofia:
@@ -72,7 +76,7 @@ yogya:
 larissa:
     display_name: "Larissa Schmid"
     role: alum
-    bio: "PostDoc, now Machine Learning Engineer at SEB."
+    bio: "PostDoc 2025–2026, now Machine Learning Engineer at SEB."
 
 monica:
     display_name: "Mónica Jin"
