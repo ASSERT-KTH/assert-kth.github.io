@@ -10,10 +10,6 @@ martin:
     image: "/img/people/martin.jpg"
     webpage: "https://www.monperrus.net/martin/"
 
-larissa:
-    display_name: "Larissa Schmid"
-    role: postdoc
-
 julien:
     display_name: "Julien Malka"
     role: postdoc
@@ -72,6 +68,11 @@ yogya:
     display_name: "Yogya Gamage"
     role: grad
     webpage: "https://www.kth.se/profile/yogya/"
+
+larissa:
+    display_name: "Larissa Schmid"
+    role: alum
+    bio: "PostDoc, now Machine Learning Engineer at SEB."
 
 monica:
     display_name: "Mónica Jin"
