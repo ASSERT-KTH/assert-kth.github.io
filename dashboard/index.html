@@ -296,6 +296,17 @@
     color: var(--ink);
     line-height: 1.5;
   }
+  /* no TLDR yet: the full description, in a smaller reading size */
+  .topic-detail p.full {
+    font-size: clamp(.85rem, 1.05vw, 1.05rem);
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  /* a full description is long: tighter card and a smaller QR so the
+     contact line still fits on screen */
+  #topics.full-text { gap: .6rem; padding-top: 1.5vh; }
+  #topics.full-text .topic-detail { padding: 1.4rem 2.2rem; gap: .8rem; }
+  #topics.full-text .topics-foot img { width: clamp(90px, 7vw, 120px); }
   .topic-detail .tldr-tag {
     font-size: .7em;
     color: var(--green-dim);
@@ -540,16 +551,13 @@
   // splash → people → each live microfrontend fullscreen → all → thesis topics → loop.
   // 5 minutes per scene by default; override for testing with ?secs=10
   // per category: one overview page with all titles, then one page per
-  // topic with its TLDR. Time on screen depends on how much there is to
-  // read: at the default 5-minute base, an overview holds 20s + 2.5s per
-  // title and a topic 10s + 1s per TLDR word (clamped to 20–45s). Durations
-  // scale with the base scene length, so ?secs= speeds everything up.
-  function topicTldr(t) {
-    if (t.tldr) return t.tldr;
-    // no TLDR yet (see topic-tldrs.json): fall back to the first sentence
-    const m = t.description.match(/^.*?[.?!](\s|$)/);
-    return (m ? m[0] : t.description).trim();
-  }
+  // topic with its TLDR, or its full description if it has no TLDR yet (see
+  // topic-tldrs.json). Time on screen depends on how much there is to read:
+  // at the default 5-minute base, an overview holds 20s + 2.5s per title, a
+  // TLDR 10s + 1s per word (clamped to 20–45s) and a full description
+  // 10s + 0.4s per word (clamped to 45–120s). Durations scale with the base
+  // scene length, so ?secs= speeds everything up.
+  const clamp = (lo, x, hi) => Math.min(hi, Math.max(lo, x));
 
   function buildTopicPages({ categories }, sceneMs) {
     const scale = sceneMs / 300000;
@@ -558,10 +566,12 @@
       pages.push({ type: 'overview', category: cat.name, topics: cat.topics,
                    ms: (20 + 2.5 * cat.topics.length) * 1000 * scale });
       for (const t of cat.topics) {
-        const tldr = topicTldr(t);
-        const secs = Math.min(45, Math.max(20, 10 + tldr.split(/\s+/).length));
+        const full = !t.tldr;
+        const text = full ? t.description : t.tldr;
+        const words = text.split(/\s+/).length;
+        const secs = full ? clamp(45, 10 + 0.4 * words, 120) : clamp(20, 10 + words, 45);
         pages.push({ type: 'topic', category: cat.name,
-                     topic: t, tldr, ms: secs * 1000 * scale });
+                     topic: t, text, full, ms: secs * 1000 * scale });
       }
     }
     // cumulative start times, so the ticker can map elapsed time to a page
@@ -573,6 +583,7 @@
   function renderTopicPage(pages, idx) {
     const page = pages[idx];
     document.getElementById('topics-cat').textContent = page.category;
+    document.getElementById('topics').classList.toggle('full-text', !!page.full);
     document.getElementById('topics-page').textContent = `${idx + 1} / ${pages.length}`;
     const tg = document.getElementById('topics-grid');
     tg.innerHTML = '';
@@ -588,9 +599,11 @@
       tg.className = 'topic-grid detail';
       const card = document.createElement('article');
       card.className = 'topic-detail';
-      card.innerHTML = '<h3></h3><p><span class="tldr-tag">TL;DR</span><span></span></p>';
+      card.innerHTML = page.full
+        ? '<h3></h3><p class="full"><span></span></p>'
+        : '<h3></h3><p><span class="tldr-tag">TL;DR</span><span></span></p>';
       card.querySelector('h3').textContent = page.topic.title;
-      card.querySelector('p span:last-child').textContent = page.tldr;
+      card.querySelector('p span:last-child').textContent = page.text;
       tg.appendChild(card);
     }
   }

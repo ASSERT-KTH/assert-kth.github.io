@@ -31,8 +31,8 @@ monitor.
      refresh it anytime with `python3 dashboard/update-topics.py`
      (needs the `gh` CLI authenticated). TL;DRs live in `topic-tldrs.json`,
      keyed by the topic's `.tex` file name; the script lists new topics that
-     lack one (the monitor shows the first sentence of the description until
-     a TL;DR is added). A scheduled GitHub Action
+     lack one (the monitor shows the full description, 45s–2min on screen,
+     until a TL;DR is added). A scheduled GitHub Action
      (`.github/workflows/update-topics.yml`) runs it daily, commits the
      result when it changed, and triggers a site rebuild — so the monitor
      follows the topics repo without anyone touching the dashboard.

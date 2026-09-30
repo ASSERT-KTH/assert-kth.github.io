@@ -89,7 +89,7 @@ def main():
         indent=2, ensure_ascii=False) + "\n")
     print(f"wrote {OUT} ({len(topics)} topics, {len(categories)} categories)")
     if missing:
-        # the dashboard falls back to the first sentence of the description
+        # the dashboard shows the full description until a TLDR is added
         print(f"no TLDR in {TLDRS.name} for:\n  " + "\n  ".join(missing))
 
 
