@@ -266,7 +266,7 @@
     border-bottom: 1px solid var(--line);
   }
   .topic-title-row::before { content: "▪"; color: var(--green); }
-  /* detail page: one topic, full description */
+  /* detail page: one topic, its TLDR */
   #topics .topic-grid.detail {
     display: flex;
     flex-direction: column;
@@ -292,11 +292,32 @@
   }
   .topic-detail h3::before { content: "▪ "; color: var(--green-dim); }
   .topic-detail p {
-    font-size: clamp(.95rem, 1.3vw, 1.2rem);
-    color: var(--ink-2);
-    line-height: 1.65;
+    font-size: clamp(1.2rem, 2vw, 1.9rem);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .topic-detail .tldr-tag {
+    font-size: .7em;
+    color: var(--green-dim);
+    letter-spacing: .15em;
+    margin-right: .6rem;
+  }
+  /* contact line + QR code to the full descriptions, on every topic page */
+  #topics .topics-foot {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: left;
+  }
+  #topics .topics-foot img {
+    width: clamp(110px, 11vw, 190px);
+    height: auto;
+    border-radius: 6px;
   }
   #topics .contact {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
     font-size: clamp(.85rem, 1.3vw, 1.1rem);
     color: var(--ink-2);
   }
@@ -389,7 +410,13 @@
   <div class="pitch">Searching for a Master thesis topic? <span class="consider">Consider:</span></div>
   <div class="cat" id="topics-cat"></div>
   <div class="topic-grid" id="topics-grid"></div>
-  <div class="contact">Interested? Reach out to <b>monperrus@kth.se</b></div>
+  <div class="topics-foot">
+    <img src="topics-qr.svg" alt="QR code linking to www.monperrus.net/martin/topics">
+    <div class="contact">
+      <span>Scan for the full descriptions: <b>monperrus.net/martin/topics</b></span>
+      <span>Interested? Reach out to <b>monperrus@kth.se</b></span>
+    </div>
+  </div>
   <div class="pager"><span id="topics-page"></span> · <span class="src">github.com/ASSERT-KTH/topics</span></div>
 </section>
 
@@ -513,17 +540,28 @@
   // splash → people → each live microfrontend fullscreen → all → thesis topics → loop.
   // 5 minutes per scene by default; override for testing with ?secs=10
   // per category: one overview page with all titles, then one page per
-  // topic with the full description. Durations are fractions of the base
-  // scene length so ?secs= scales everything: at the default 5-minute base,
-  // an overview page holds 1 minute and each topic page 2 minutes.
+  // topic with its TLDR. Time on screen depends on how much there is to
+  // read: at the default 5-minute base, an overview holds 20s + 2.5s per
+  // title and a topic 10s + 1s per TLDR word (clamped to 20–45s). Durations
+  // scale with the base scene length, so ?secs= speeds everything up.
+  function topicTldr(t) {
+    if (t.tldr) return t.tldr;
+    // no TLDR yet (see topic-tldrs.json): fall back to the first sentence
+    const m = t.description.match(/^.*?[.?!](\s|$)/);
+    return (m ? m[0] : t.description).trim();
+  }
+
   function buildTopicPages({ categories }, sceneMs) {
+    const scale = sceneMs / 300000;
     const pages = [];
     for (const cat of categories) {
-      pages.push({ type: 'overview', category: cat.name,
-                   topics: cat.topics, ms: sceneMs * 0.2 });
+      pages.push({ type: 'overview', category: cat.name, topics: cat.topics,
+                   ms: (20 + 2.5 * cat.topics.length) * 1000 * scale });
       for (const t of cat.topics) {
+        const tldr = topicTldr(t);
+        const secs = Math.min(45, Math.max(20, 10 + tldr.split(/\s+/).length));
         pages.push({ type: 'topic', category: cat.name,
-                     topic: t, ms: sceneMs * 0.4 });
+                     topic: t, tldr, ms: secs * 1000 * scale });
       }
     }
     // cumulative start times, so the ticker can map elapsed time to a page
@@ -550,9 +588,9 @@
       tg.className = 'topic-grid detail';
       const card = document.createElement('article');
       card.className = 'topic-detail';
-      card.innerHTML = '<h3></h3><p></p>';
+      card.innerHTML = '<h3></h3><p><span class="tldr-tag">TL;DR</span><span></span></p>';
       card.querySelector('h3').textContent = page.topic.title;
-      card.querySelector('p').textContent = page.topic.description;
+      card.querySelector('p span:last-child').textContent = page.tldr;
       tg.appendChild(card);
     }
   }

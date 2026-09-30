@@ -20,14 +20,19 @@ monitor.
   3. one scene per live microfrontend, fullscreen (2 minutes each)
   4. all microfrontends together
   5. open master thesis topics — "Searching for a Master thesis topic?
-     Consider:" — per category, first an overview page listing all titles
-     (1 minute), then one page per topic with its full description
-     (2 minutes each), with a contact line (monperrus@kth.se) throughout.
-     With 39 topics in 3 categories this scene runs ~81 minutes, making
-     the full loop roughly 1h50. Data comes from `topics.json`, a snapshot of
+     Consider:" — per category, first an overview page listing all titles,
+     then one page per topic with a short TL;DR. Each page stays up for as
+     long as it takes to read it (overview: 20s + 2.5s per title; topic:
+     10s + 1s per TL;DR word, 20–45s). A QR code to the full descriptions
+     (www.monperrus.net/martin/topics, `topics-qr.svg`) and a contact line
+     (monperrus@kth.se) stay on screen throughout. With 44 topics in 3
+     categories this scene runs ~28 minutes. Data comes from `topics.json`, a snapshot of
      [ASSERT-KTH/topics](https://github.com/ASSERT-KTH/topics) (current/);
      refresh it anytime with `python3 dashboard/update-topics.py`
-     (needs the `gh` CLI authenticated). A scheduled GitHub Action
+     (needs the `gh` CLI authenticated). TL;DRs live in `topic-tldrs.json`,
+     keyed by the topic's `.tex` file name; the script lists new topics that
+     lack one (the monitor shows the first sentence of the description until
+     a TL;DR is added). A scheduled GitHub Action
      (`.github/workflows/update-topics.yml`) runs it daily, commits the
      result when it changed, and triggers a site rebuild — so the monitor
      follows the topics repo without anyone touching the dashboard.
