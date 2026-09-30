@@ -21,7 +21,8 @@
       "id": "julien",
       "name": "Julien Malka",
       "role": "PostDoc",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/julien.jpeg"
     },
     {
       "id": "carmine",

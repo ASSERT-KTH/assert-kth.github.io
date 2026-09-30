@@ -13,6 +13,7 @@ martin:
 julien:
     display_name: "Julien Malka"
     role: postdoc
+    image: "/img/people/julien.jpeg"
     webpage: "https://luj.fr/"
 
 carmine:
