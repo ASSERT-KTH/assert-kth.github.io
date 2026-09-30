@@ -5,34 +5,52 @@
 <style>
   :root {
     --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
-    --green: #35e07c; --green-dim: #1f9e57;
+    --green: #35e07c; --green-dim: #1f9e57; --line: #1d3323;
   }
   * { margin: 0; box-sizing: border-box; }
   body {
     background: var(--bg); color: var(--ink);
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    height: 100vh; display: flex; flex-direction: column;
-    justify-content: center; padding: 18px; overflow: hidden;
+    height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  /* sized against the cell's own frame (container units), so the quote
+     fills the fullscreen monitor scene and stays compact in the grid tile */
+  .stage {
+    flex: 1; min-height: 0; container-type: size;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: clamp(10px, 5cqmin, 56px);
+    text-align: center;
+    font-size: clamp(13px, min(3.9cqw, 8.5cqh), 60px);
   }
   blockquote {
-    font-size: 14px; line-height: 1.5; color: var(--ink);
-    transition: opacity .6s; min-height: 4.5em;
+    line-height: 1.4; color: var(--ink); max-width: 30em;
+    text-wrap: balance; transition: opacity .6s;
   }
   blockquote::before { content: "“"; color: var(--green); font-size: 1.4em; }
   blockquote::after  { content: "”"; color: var(--green); font-size: 1.4em; }
-  cite {
-    display: block; font-style: normal; font-size: 11px;
-    color: var(--ink-3); margin-top: 6px; transition: opacity .6s;
-  }
   .fade { opacity: 0; }
-  a { color: var(--green-dim); text-decoration: none; font-size: 12px; margin-top: 12px; }
+  footer {
+    flex: none; display: flex; align-items: baseline; gap: .7rem;
+    padding: 5px 10px; border-top: 1px solid var(--line);
+    font-size: 11px; color: var(--ink-3);
+  }
+  a { color: var(--green-dim); text-decoration: none; }
   a:hover { color: var(--green); }
+  cite {
+    display: block; font-style: normal; font-size: max(11px, .45em);
+    color: var(--ink-3); margin-top: .6em; letter-spacing: .08em;
+    transition: opacity .6s;
+  }
 </style>
 </head>
 <body>
-  <blockquote id="q"></blockquote>
-  <cite id="c"></cite>
-  <a href="https://algomaster99.github.io/publications" target="_blank" rel="noopener">algomaster99.github.io →</a>
+  <main class="stage">
+    <blockquote id="q"></blockquote>
+    <cite id="c"></cite>
+  </main>
+  <footer><a href="https://algomaster99.github.io/publications" target="_blank" rel="noopener">algomaster99.github.io →</a></footer>
 <script>
   const papers = [
     ['Trusting-Trust Attack against an Entire Linux Distribution through Binary Manipulation', '2026'],

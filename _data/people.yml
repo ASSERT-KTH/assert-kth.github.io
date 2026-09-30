@@ -10,28 +10,28 @@ martin:
     image: "/img/people/martin.jpg"
     webpage: "https://www.monperrus.net/martin/"
 
-larissa:
-    display_name: "Larissa Schmid"
-    role: postdoc
-
 julien:
     display_name: "Julien Malka"
     role: postdoc
+    image: "/img/people/julien.jpeg"
     webpage: "https://luj.fr/"
 
 carmine:
     display_name: "Carmine Cesarano"
     role: postdoc
+    image: "/img/people/carmine.jpeg"
     webpage: "https://carminecesarano.github.io/"
 
 javierron:
     display_name: "Javier Ron"
     role: grad
+    image: "/img/people/javierron.png"
     webpage: "https://www.kth.se/profile/javierro"
 
 yuxin:
     display_name: "Yuxin Liu"
     role: grad
+    image: "/img/people/yuxin.jpeg"
     webpage: "https://www.kth.se/profile/yuxinli"
 
 frank:
@@ -49,6 +49,7 @@ aman:
 andre:
     display_name: "André Silva"
     role: grad
+    image: "/img/people/andre.jpeg"
     webpage: "https://andre15silva.github.io/"
 
 sofia:
@@ -72,6 +73,11 @@ yogya:
     display_name: "Yogya Gamage"
     role: grad
     webpage: "https://www.kth.se/profile/yogya/"
+
+larissa:
+    display_name: "Larissa Schmid"
+    role: alum
+    bio: "PostDoc 2025–2026, now Machine Learning Engineer at SEB."
 
 monica:
     display_name: "Mónica Jin"

@@ -18,34 +18,32 @@
       "image": "/img/people/martin.jpg"
     },
     {
-      "id": "larissa",
-      "name": "Larissa Schmid",
-      "role": "PostDoc",
-      "cell": false
-    },
-    {
       "id": "julien",
       "name": "Julien Malka",
       "role": "PostDoc",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/julien.jpeg"
     },
     {
       "id": "carmine",
       "name": "Carmine Cesarano",
       "role": "PostDoc",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/carmine.jpeg"
     },
     {
       "id": "javierron",
       "name": "Javier Ron",
       "role": "PhD",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/javierron.png"
     },
     {
       "id": "yuxin",
       "name": "Yuxin Liu",
       "role": "PhD",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/yuxin.jpeg"
     },
     {
       "id": "frank",
@@ -65,7 +63,8 @@
       "id": "andre",
       "name": "André Silva",
       "role": "PhD",
-      "cell": false
+      "cell": false,
+      "image": "/img/people/andre.jpeg"
     },
     {
       "id": "sofia",
