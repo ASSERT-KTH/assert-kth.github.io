@@ -11,15 +11,20 @@
   body {
     background: var(--bg); color: var(--ink);
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    /* sizes follow the cell's frame, so the panda grows in the fullscreen
-       monitor scene and stays compact in the grid tile */
-    font-size: clamp(12px, 1.2vw + 1.2vh, 32px);
     height: 100vh; overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-    padding: 4vmin;
   }
-  .panda-row { display: flex; align-items: center; gap: 1.1em; max-width: min(100%, 60em); }
-  .panda-row svg { flex: none; width: clamp(90px, 60vmin - 70px, 540px); height: auto; }
+  /* sized against the cell's own frame (container units), so the panda
+     fills the fullscreen monitor scene and stays compact in the grid tile */
+  .stage {
+    height: 100%; container-type: size;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .panda-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(10px, 3cqw, 28px); padding: clamp(6px, 4cqmin, 40px);
+    width: 100%; height: 100%;
+  }
+  .panda-row svg { flex: none; width: min(28cqw, 70cqh); height: auto; }
   .bubble {
     position: relative;
     background: #0f1811;
@@ -28,7 +33,9 @@
     padding: .8em 1em;
     color: var(--ink-2);
     line-height: 1.55;
+    font-size: clamp(9px, min(3.2cqw, 5.4cqh), 16px);
   }
+  /* tail pointing left, at the panda */
   .bubble::before {
     content: "";
     position: absolute;
@@ -43,9 +50,27 @@
   .bubble a { color: var(--green); text-decoration: none; }
   .bubble a:hover { text-decoration: underline; }
   .bubble .title { color: var(--ink); font-weight: 700; }
+
+  /* tall frame (fullscreen monitor scene): bubble above a big panda */
+  @container (min-height: 320px) {
+    .panda-row { flex-direction: column-reverse; gap: clamp(14px, 3.5cqh, 40px); padding-block: 6cqh; }
+    .panda-row svg { width: min(40cqw, 38cqh); }
+    .bubble { font-size: clamp(14px, min(2cqw, 3.3cqh), 34px); max-width: min(92cqw, 42em); }
+    .bubble::before {
+      left: 50%; top: 100%;
+      border: .7em solid transparent;
+      border-bottom: 0;
+      border-top-color: var(--line);
+      transform: translateX(-50%);
+    }
+  }
+  .panda-row svg { animation: bob 3.8s ease-in-out infinite alternate; }
+  @keyframes bob { from { transform: translateY(3px); } to { transform: translateY(-3px); } }
+  @media (prefers-reduced-motion: reduce) { .panda-row svg { animation: none; } }
 </style>
 </head>
 <body>
+<main class="stage">
   <div class="panda-row">
     <svg viewBox="0 0 86 94" role="img" aria-label="A black and white panda">
       <!-- ears -->
@@ -82,5 +107,6 @@
       </ol>
     </div>
   </div>
+</main>
 </body>
 </html>
