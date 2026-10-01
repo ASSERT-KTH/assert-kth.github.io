@@ -39,8 +39,9 @@
   a { color: var(--green-dim); text-decoration: none; }
   a:hover { color: var(--green); }
   cite {
-    display: block; font-style: normal; font-size: max(11px, .45em);
-    color: var(--ink-3); margin-top: .6em; letter-spacing: .08em;
+    display: block; max-width: 90vw; font-style: normal;
+    font-size: max(11px, .45em); line-height: 1.5;
+    color: var(--ink-3); margin-top: .6em;
     transition: opacity .6s;
   }
 </style>
@@ -53,18 +54,18 @@
   <footer><a href="https://algomaster99.github.io/publications" target="_blank" rel="noopener">algomaster99.github.io →</a></footer>
 <script>
   const papers = [
-    ['Trusting-Trust Attack against an Entire Linux Distribution through Binary Manipulation', '2026'],
-    ['Dependencies that Bundle Code and Execution', '2026'],
-    ['zkSBOM: Privacy-Preserving SBOM Sharing with Zero-Knowledge Sets', '2026'],
-    ['Classport: Designing Runtime Dependency Introspection for Java', '2025'],
-    ['Build and Runtime Integrity for Java', '2025'],
-    ['Causes and Canonicalization of Unreproducible Builds in Java', '2025'],
-    ['SBOM.EXE: Countering Dynamic Code Injection based on Software Bill of Materials in Java', '2024'],
-    ['Maven-Hijack: Software Supply Chain Attack Exploiting Packaging Order', '2024 · SCORED Distinguished Paper'],
-    ['Software Bill of Materials in Java', '2023'],
-    ['Challenges of Producing Software Bill of Materials for Java', '2023'],
-    ['Augmenting Diffs With Runtime Information', '2022'],
-    ['UPPERCASE IS ALL YOU NEED', ''],
+    ['Trusting-Trust Attack against an Entire Linux Distribution through Binary Manipulation', 'Julien Malka, Aman Sharma, Martin Monperrus, Stefano Zacchiroli, and Théo Zimmermann · SCORED 2026'],
+    ['Dependencies that Bundle Code and Execution', 'Aman Sharma and Martin Monperrus · arXiv, 2026'],
+    ['zkSBOM: Privacy-Preserving SBOM Sharing with Zero-Knowledge Sets', 'Tom Sorger, Eric Cornelissen, Aman Sharma, Javier Ron, Musard Balliu, and Martin Monperrus · arXiv, 2026'],
+    ['Classport: Designing Runtime Dependency Introspection for Java', 'Serena Cofano, Daniel Williams, Aman Sharma, and Martin Monperrus · arXiv, 2025'],
+    ['Build and Runtime Integrity for Java', 'Aman Sharma · ICSE Companion, 2025'],
+    ['Causes and Canonicalization of Unreproducible Builds in Java', 'Aman Sharma, Benoit Baudry, and Martin Monperrus · IEEE Transactions on Software Engineering, 2025'],
+    ['SBOM.EXE: Countering Dynamic Code Injection based on Software Bill of Materials in Java', 'Aman Sharma, Martin Wittlinger, Benoit Baudry, and Martin Monperrus · arXiv, 2024'],
+    ['Maven-Hijack: Software Supply Chain Attack Exploiting Packaging Order', 'Federico Bono, Frank Reyes, Aman Sharma, Benoit Baudry, and Martin Monperrus · SCORED 2025 · Distinguished Paper'],
+    ['Software Bill of Materials in Java', 'Musard Balliu et al. · SCORED@CCS, 2023'],
+    ['Challenges of Producing Software Bill of Materials for Java', 'Musard Balliu et al. · IEEE Security & Privacy, 2023'],
+    ['Augmenting Diffs With Runtime Information', 'K. Etemadi, Aman Sharma, Fernanda Madeiral, and Martin Monperrus · IEEE Transactions on Software Engineering, 2022'],
+    ['UPPERCASE IS ALL YOU NEED', 'Vivi Andersson and Aman Sharma'],
   ];
   const q = document.getElementById('q');
   const c = document.getElementById('c');
@@ -76,9 +77,9 @@
     return papers[i];
   }
   function render() {
-    const [title, year] = pick();
+    const [title, citation] = pick();
     q.textContent = title;
-    c.textContent = year;
+    c.textContent = citation;
   }
   function show() {
     q.classList.add('fade');
