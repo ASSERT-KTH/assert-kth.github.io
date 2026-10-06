@@ -95,7 +95,7 @@ def run(cmd: list[str], dry: bool) -> None:
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
 
 
-def write_keys(home: str, keys: list[str], dry: bool) -> bool:
+def write_keys(login: str, home: str, keys: list[str], dry: bool) -> bool:
     content = "".join(k + "\n" for k in keys)
     sshdir = Path(home) / ".ssh"
     ak = sshdir / "authorized_keys"
@@ -106,6 +106,8 @@ def write_keys(home: str, keys: list[str], dry: bool) -> bool:
         pass
     if dry:
         return True
+    if not os.path.isdir(home):
+        subprocess.run(["mkhomedir_helper", login], check=True)
     st = os.stat(home)
     sshdir.mkdir(mode=0o700, exist_ok=True)
     os.chown(sshdir, st.st_uid, st.st_gid)
@@ -128,30 +130,37 @@ def sync(config_dir: Path, dry: bool) -> list[str]:
     has_docker = any(l.startswith("docker:") for l in Path("/etc/group").read_text().splitlines())
     changes: list[str] = []
 
+    # per-account errors are reported but never block the other accounts
     for login, (name, keys) in sorted(members.items()):
         if login in protected - {ADMIN}:
             continue
-        if login not in accounts:
-            cmd = ["useradd", "-m", "-s", "/bin/bash", "-c", name]
-            if has_docker:
-                cmd += ["-G", "docker"]
-            run(cmd + [login], dry)
-            changes.append(f"➕ created {login}")
-            if dry:
-                if keys:
-                    changes.append(f"🔑 keys {login} ({len(keys)})")
-                continue
-            accounts = local_accounts()
-        elif is_expired(login):
-            run(["usermod", "--expiredate", "", login], dry)
-            changes.append(f"✅ re-enabled {login}")
-        if write_keys(accounts[login][1], keys, dry):
-            changes.append(f"🔑 keys {login} ({len(keys)})")
+        try:
+            if login not in accounts:
+                cmd = ["useradd", "-m", "-s", "/bin/bash", "-c", name]
+                if has_docker:
+                    cmd += ["-G", "docker"]
+                run(cmd + [login], dry)
+                changes.append(f"➕ created {login}")
+                if dry:
+                    if keys:
+                        changes.append(f"🔑 keys {login} ({len(keys)})")
+                    continue
+                accounts = local_accounts()
+            elif is_expired(login):
+                run(["usermod", "--expiredate", "", login], dry)
+                changes.append(f"✅ re-enabled {login}")
+            if write_keys(login, accounts[login][1], keys, dry):
+                changes.append(f"🔑 keys {login} ({len(keys)})")
+        except (OSError, subprocess.CalledProcessError) as e:
+            changes.append(f"❌ {login}: {e}")
 
-    for login, (uid, _home) in sorted(accounts.items()):
+    for login, (uid, _) in sorted(accounts.items()):
         if UID_MIN <= uid < UID_MAX and login not in members and login not in protected and not is_expired(login):
-            run(["usermod", "--expiredate", "1", login], dry)
-            changes.append(f"⛔ disabled {login}")
+            try:
+                run(["usermod", "--expiredate", "1", login], dry)
+                changes.append(f"⛔ disabled {login}")
+            except subprocess.CalledProcessError as e:
+                changes.append(f"❌ {login}: {e}")
     return changes
 
 
@@ -177,7 +186,7 @@ def main() -> int:
     prefix = "[dry-run] " if dry else ""
     for c in changes:
         print(prefix + c)
-    return 0
+    return 1 if any(c.startswith("❌") for c in changes) else 0
 
 
 if __name__ == "__main__":

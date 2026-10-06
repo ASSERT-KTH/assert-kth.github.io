@@ -21,9 +21,12 @@ martin: {display_name: "Martin M", role: faculty, unix_login: martin}
 alice: {display_name: "Alice", role: grad, unix_login: alice}
 carol: {display_name: "Carol", role: grad, unix_login: carol}
 dave: {display_name: "Dave", role: postdoc, unix_login: dave}
+erin: {display_name: "Erin", role: grad, unix_login: erin}
 bob: {display_name: "Bob", role: alum, unix_login: bob}
 Y
 for u in martin alice carol dave; do cat /k/$u.pub > /cfg/infra/ssh-keys/$u.pub; done
+key erin >/dev/null; cat /k/erin.pub > /cfg/infra/ssh-keys/erin.pub
+useradd -M -s /bin/bash erin   # existing account without home dir (seen on repairnator)
 # initial machine state
 for u in martin alice bob dave svc; do useradd -m -s /bin/bash $u; done
 mkdir -p /home/alice/.ssh && cat /k/old.pub > /home/alice/.ssh/authorized_keys && chown -R alice /home/alice/.ssh
@@ -49,6 +52,7 @@ ok "bob (alum) disabled" "! canlogin bob bob"
 ok "bob home kept" "test -f /home/bob/.ssh/authorized_keys"
 ok "svc (protected) untouched" "! echo '$OUT' | grep -q svc"
 ok "martin can log in" "canlogin martin martin"
+ok "erin (no home) gets home + can log in" "test -d /home/erin && canlogin erin erin"
 ok "root keys untouched" "[ \"\$(md5sum < /root/.ssh/authorized_keys)\" = '$ROOTKEYS' ]"
 ok "escape hatch: root login with admin key" "canlogin root martin"
 ok "second run silent" "[ -z \"\$(python3 /sync.py /cfg)\" ]"
