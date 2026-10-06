@@ -3,6 +3,7 @@ benoit:
     role: faculty
     image: "/img/people/benoit.jpeg"
     webpage: "https://softwarediversity.eu/"
+    unix_login: benoit
 
 martin:
     display_name: "Martin Monperrus"
@@ -16,12 +17,14 @@ julien:
     role: postdoc
     image: "/img/people/julien.jpeg"
     webpage: "https://luj.fr/"
+    unix_login: julien
 
 carmine:
     display_name: "Carmine Cesarano"
     role: postdoc
     image: "/img/people/carmine.jpeg"
     webpage: "https://carminecesarano.github.io/"
+    unix_login: carmine
 
 javierron:
     display_name: "Javier Ron"

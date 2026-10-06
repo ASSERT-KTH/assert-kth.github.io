@@ -1,0 +1,9 @@
+[Unit]
+Description=Sync unix accounts with ASSERT team config
+After=network-online.target
+
+[Service]
+Type=oneshot
+# a failed pull keeps the last known config
+ExecStartPre=-/usr/bin/git -C /var/lib/assert-users/repo pull -q --ff-only
+ExecStart=/usr/local/sbin/assert-sync-users /var/lib/assert-users/repo
