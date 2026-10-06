@@ -1,7 +1,7 @@
 name: ASSERT - AweSome SoftwarE Research Team
 url: http://assert-kth.github.io
 
-exclude: [bibble, README.md, Makefile, screenshot.png]
+exclude: [bibble, README.md, Makefile, screenshot.png, infra]
 
 # colorize code snippets with the pygments module
 highlighter: pygments

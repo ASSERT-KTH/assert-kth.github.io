@@ -9,6 +9,7 @@ martin:
     role: faculty
     image: "/img/people/martin.jpg"
     webpage: "https://www.monperrus.net/martin/"
+    unix_login: martin
 
 julien:
     display_name: "Julien Malka"
@@ -27,52 +28,61 @@ javierron:
     role: grad
     image: "/img/people/javierron.png"
     webpage: "https://www.kth.se/profile/javierro"
+    unix_login: javier
 
 yuxin:
     display_name: "Yuxin Liu"
     role: grad
     image: "/img/people/yuxin.jpeg"
     webpage: "https://www.kth.se/profile/yuxinli"
+    unix_login: yuxin
 
 frank:
     display_name: "Frank Garcia"
     role: grad
     image: "/img/people/frankrg.jpeg"
     webpage: "https://www.kth.se/profile/frankrg"
+    unix_login: frank
 
 aman:
     display_name: "Aman Sharma"
     role: grad
     image: "/img/people/aman.jpeg"
     webpage: "https://algomaster99.github.io/"
+    unix_login: aman
 
 andre:
     display_name: "André Silva"
     role: grad
     image: "/img/people/andre.jpeg"
     webpage: "https://andre15silva.github.io/"
+    unix_login: andre
 
 sofia:
     display_name: "Sofia Bobadilla"
     role: grad
     image: "/img/people/sofia.jpg"
     webpage: "https://sofiabobadilla.github.io/"
+    unix_login: sofbob
 vivi:
     display_name: "Vivi Andersson"
     role: grad
     image: "/img/people/vivi.png"
     webpage: "https://vivi365.github.io/"
+    unix_login: vivi
     
 raphina:
     display_name: "Raphina Liu"
     role: grad
     image: "/img/people/raphina.jpeg"
     webpage: "https://stamp9.github.io/"
+    unix_login: raphina
 
 yogya:
     display_name: "Yogya Gamage"
     role: grad
     webpage: "https://www.kth.se/profile/yogya/"
+    unix_login: yogya
 
 larissa:
     display_name: "Larissa Schmid"
