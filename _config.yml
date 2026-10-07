@@ -19,6 +19,8 @@ roles:
     name: Graduate Students
   - key: engineer
     name: Research Engineers
+  - key: research-assistant
+    name: Research Assistants
       #  - key: ugrad
       #    name: Undergraduate Students
       #  - key: ugrad-alum

@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  people:
+    name: people.yml and SSH keys
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - run: pip install pyyaml
+      - run: python3 infra/check.py --allow-missing-keys
+
+  build:
+    name: jekyll build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@ae195bbe749a7cef685ac729197124a48305c1cb # v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - run: pip install bibble
+      - run: make
