@@ -16,7 +16,9 @@ restores access.
 Escape hatches:
   - /root/.ssh/authorized_keys is never touched (holds the admin's key)
   - touch /etc/assert-users/disabled  -> the script exits without doing anything
-  - logins listed in /etc/assert-users/protected are never modified
+  - logins listed in /etc/assert-users/protected are never modified, except ADMIN:
+    listed there, its admin keys are only guaranteed present (missing lines appended,
+    other keys kept), so another tool may own the rest of its authorized_keys
   - aborts without any change if the config is invalid, or if ADMIN has no key
 
 Silent when nothing changes; prints one line per change otherwise.
@@ -95,15 +97,29 @@ def run(cmd: list[str], dry: bool) -> None:
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
 
 
-def write_keys(login: str, home: str, keys: list[str], dry: bool) -> bool:
-    content = "".join(k + "\n" for k in keys)
+def write_keys(login: str, home: str, keys: list[str], dry: bool, merge: bool = False) -> bool:
+    """Overwrite authorized_keys with ``keys``; with ``merge``, only append missing ones.
+
+    A key counts as present when its base64 blob appears on any line, whatever options
+    or comment another tool gave it.
+    """
     sshdir = Path(home) / ".ssh"
     ak = sshdir / "authorized_keys"
     try:
-        if ak.read_text() == content:
-            return False
+        current = ak.read_text()
     except OSError:
-        pass
+        current = None
+    if merge and current is not None:
+        present = {tok for line in current.splitlines() for tok in line.split()}
+        missing = [k for k in keys if k.split()[1] not in present]
+        if not missing:
+            return False
+        content = current + ("" if current.endswith("\n") or not current else "\n")
+        content += "".join(k + "\n" for k in missing)
+    else:
+        content = "".join(k + "\n" for k in keys)
+        if current == content:
+            return False
     if dry:
         return True
     if not os.path.isdir(home):
@@ -121,11 +137,11 @@ def write_keys(login: str, home: str, keys: list[str], dry: bool) -> bool:
 
 def sync(config_dir: Path, dry: bool) -> list[str]:
     members = load_config(config_dir)
-    protected = set()
+    listed = set()
     pfile = ETC / "protected"
     if pfile.exists():
-        protected = {l.strip() for l in pfile.read_text().splitlines() if l.strip() and not l.startswith("#")}
-    protected |= {"root", ADMIN}
+        listed = {l.strip() for l in pfile.read_text().splitlines() if l.strip() and not l.startswith("#")}
+    protected = listed | {"root", ADMIN}
     accounts = local_accounts()
     has_docker = any(l.startswith("docker:") for l in Path("/etc/group").read_text().splitlines())
     changes: list[str] = []
@@ -149,7 +165,8 @@ def sync(config_dir: Path, dry: bool) -> list[str]:
             elif is_expired(login):
                 run(["usermod", "--expiredate", "", login], dry)
                 changes.append(f"✅ re-enabled {login}")
-            if write_keys(login, accounts[login][1], keys, dry):
+            # A listed ADMIN (the only listed login reaching here) keeps keys it did not get from us.
+            if write_keys(login, accounts[login][1], keys, dry, merge=login in listed):
                 changes.append(f"🔑 keys {login} ({len(keys)})")
         except (OSError, subprocess.CalledProcessError) as e:
             changes.append(f"❌ {login}: {e}")

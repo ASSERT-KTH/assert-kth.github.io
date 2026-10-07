@@ -1,2 +1,5 @@
 # Local accounts never modified by the sync (service accounts, no SSH)
 assert
+# The admin, listed: its key in ssh-keys/martin.pub is only guaranteed present; the rest of
+# its authorized_keys belongs to sshgraph (per-edge rotating keys, github.com/monperrus/sshgraph)
+martin

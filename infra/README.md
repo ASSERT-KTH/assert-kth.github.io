@@ -31,5 +31,5 @@ Dry-run: `sudo assert-sync-users /var/lib/assert-users/repo --dry-run`
 
 - `ssh root@HOST` with the admin key: `/root/.ssh/authorized_keys` is never touched by the sync
 - `touch /etc/assert-users/disabled`: the sync does nothing until the file is removed
-- `/etc/assert-users/protected` (installed from `infra/protected` by `deploy.sh`): logins the sync never modifies
+- `/etc/assert-users/protected` (installed from `infra/protected` by `deploy.sh`): logins the sync never modifies. The admin (`martin`) is the exception: listed there, its key is only guaranteed present (appended if missing), and the rest of its `authorized_keys` is left to another tool
 - the sync aborts without changes if the config is invalid or the admin (`martin`) has no key
