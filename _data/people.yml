@@ -87,6 +87,13 @@ yogya:
     webpage: "https://www.kth.se/profile/yogya/"
     unix_login: yogya
 
+piyusha:
+    display_name: "Piyusha Patil"
+    role: research-assistant
+    image: "/img/people/piyusha.jpg"
+    webpage: "https://bio.link/piyusha1710"
+    unix_login: piyusha
+
 larissa:
     display_name: "Larissa Schmid"
     role: alum
