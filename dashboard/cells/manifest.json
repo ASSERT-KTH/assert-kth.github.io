@@ -97,7 +97,7 @@
       "id": "sinvel",
       "name": "Singvalliyappa Velayutham",
       "role": "RA",
-      "cell": false,
+      "cell": true,
       "image": "/img/people/sinvel.jpg"
     }
   ]
