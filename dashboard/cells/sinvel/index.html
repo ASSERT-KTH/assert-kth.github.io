@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
+    --green: #35e07c; --green-dim: #1f9e57; --line: #1d3323;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .stage { flex: 1; min-height: 0; position: relative; container-type: size; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .msg {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; text-align: center; padding: 6cqmin;
+    font-size: clamp(14px, min(5cqw, 10cqh), 64px); line-height: 1.3;
+    color: var(--ink); background: rgba(11, 18, 13, .88); text-shadow: 0 0 12px var(--bg);
+    opacity: 0; pointer-events: none; transition: opacity .6s;
+  }
+  .msg.show { opacity: 1; }
+  footer {
+    flex: none; display: flex; justify-content: space-between;
+    padding: 5px 10px; border-top: 1px solid var(--line);
+    font-size: 11px; color: var(--ink-3);
+  }
+  #count { color: var(--green-dim); }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <canvas id="c"></canvas>
+    <div class="msg" id="msg">Claude or ChatGPT ? , it depends .</div>
+  </main>
+  <footer><span>collisions → new balls · speed ↑</span><span id="count"></span></footer>
+<script>
+  const MAX = 100, SHOW_MS = 20000;
+  const SPEED = 0.18, ACCEL = 0.04; // SPEED: fraction of cell size per second at start; speed grows by ACCEL*SPEED each second
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  const msg = document.getElementById('msg'), count = document.getElementById('count');
+  let W = 0, H = 0, dpr = 1, balls = [], phase = 'run', phaseEnd = 0, last = 0, runTime = 0;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const b of balls) { b.x = Math.min(Math.max(b.x, b.r), W - b.r); b.y = Math.min(Math.max(b.y, b.r), H - b.r); }
+  }
+
+  const radius = () => Math.max(3, Math.min(W, H) * 0.028);
+  const color = () => `hsl(${Math.random() * 360 | 0} 85% 60%)`;
+
+  function spawn(x, y) {
+    const a = Math.random() * Math.PI * 2, s = SPEED * Math.min(W, H);
+    const r = radius();
+    balls.push({
+      x: Math.min(Math.max(x, r), W - r), y: Math.min(Math.max(y, r), H - r),
+      vx: Math.cos(a) * s, vy: Math.sin(a) * s, r, c: color(), cool: 0,
+    });
+  }
+
+  function reset() {
+    balls = [];
+    spawn(W * 0.3, H * 0.5); spawn(W * 0.7, H * 0.5);
+    // aim them at each other so the first collision comes quickly
+    const s = SPEED * Math.min(W, H);
+    balls[0].vx = s; balls[0].vy = s * 0.05; balls[1].vx = -s; balls[1].vy = -s * 0.05;
+    runTime = 0; phase = 'run'; msg.classList.remove('show');
+  }
+
+  function stepOnce(dt) {
+    for (const b of balls) {
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      let hit = false;
+      if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); hit = true; }
+      if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx); hit = true; }
+      if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy); hit = true; }
+      if (b.y > H - b.r) { b.y = H - b.r; b.vy = -Math.abs(b.vy); hit = true; }
+      if (hit) { // tiny angle wobble keeps paths from repeating forever; speed stays constant
+        const w = (Math.random() - 0.5) * 0.3, c = Math.cos(w), s = Math.sin(w);
+        [b.vx, b.vy] = [b.vx * c - b.vy * s, b.vx * s + b.vy * c];
+      }
+      if (b.cool > 0) b.cool -= dt;
+    }
+    const born = [];
+    const n = balls.length;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const a = balls[i], b = balls[j];
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = a.r + b.r;
+      if (d >= min || d === 0) continue;
+      const nx = dx / d, ny = dy / d;
+      // push apart, then swap the velocity components along the normal (equal masses, constant speed)
+      const push = (min - d) / 2;
+      a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
+      const va = a.vx * nx + a.vy * ny, vb = b.vx * nx + b.vy * ny;
+      if (va - vb > 0) {
+        a.vx += (vb - va) * nx; a.vy += (vb - va) * ny;
+        b.vx += (va - vb) * nx; b.vy += (va - vb) * ny;
+      }
+      if (a.cool <= 0 && b.cool <= 0) {
+        a.cool = b.cool = 0.4;
+        born.push([(a.x + b.x) / 2, (a.y + b.y) / 2]);
+      }
+    }
+    for (const [x, y] of born) if (balls.length < MAX) spawn(x, y);
+  }
+
+  // speed rises linearly with run time; every ball is held at the current speed
+  function step(dt) {
+    runTime += dt;
+    const target = SPEED * (1 + ACCEL * runTime) * Math.min(W, H);
+    for (const b of balls) {
+      const m = Math.hypot(b.vx, b.vy) || 1;
+      b.vx *= target / m; b.vy *= target / m;
+    }
+    // sub-steps so fast balls never skip through each other or a wall
+    const n = Math.max(1, Math.ceil(target * dt / (radius() * 0.5)));
+    for (let i = 0; i < n; i++) stepOnce(dt / n);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (const b of balls) {
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = b.c; ctx.fill();
+    }
+    count.textContent = balls.length + ' / ' + MAX;
+  }
+
+  function frame(t) {
+    const dt = Math.min((t - (last || t)) / 1000, 0.05); last = t;
+    if (phase === 'run') {
+      step(dt);
+      if (balls.length >= MAX) { phase = 'done'; phaseEnd = t + SHOW_MS; msg.classList.add('show'); }
+    } else if (t >= phaseEnd) reset();
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  new ResizeObserver(resize).observe(cv);
+  resize(); reset(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
