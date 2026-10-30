@@ -92,6 +92,13 @@
       "name": "Yogya Gamage",
       "role": "PhD",
       "cell": false
+    },
+    {
+      "id": "sinvel",
+      "name": "Singvalliyappa Velayutham",
+      "role": "RA",
+      "cell": false,
+      "image": "/img/people/sinvel.jpg"
     }
   ]
 }
