@@ -32,10 +32,10 @@
       "image": "/img/people/carmine.jpeg"
     },
     {
-      "id": "javierron",
-      "name": "Javier Ron",
+      "id": "javier",
+      "name": "Javier",
       "role": "PhD",
-      "cell": false,
+      "cell": true,
       "image": "/img/people/javierron.png"
     },
     {
