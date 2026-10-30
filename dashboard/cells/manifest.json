@@ -63,7 +63,7 @@
       "id": "andre",
       "name": "André Silva",
       "role": "PhD",
-      "cell": false,
+      "cell": true,
       "image": "/img/people/andre.jpeg"
     },
     {
