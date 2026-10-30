@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
+    --green: #35e07c; --green-dim: #1f9e57; --amber: #e0b435; --line: #1d3323;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    height: 100vh; overflow: hidden;
+  }
+  #stars { position: fixed; inset: 0; width: 100%; height: 100%; }
+  /* sized against the cell's own frame (container units), so the timeline
+     fills the fullscreen monitor scene and stays compact in the grid tile */
+  .stage {
+    position: relative; height: 100%; container-type: size;
+    display: flex; flex-direction: column;
+    padding: clamp(8px, 4cqmin, 48px) clamp(10px, 5cqw, 72px);
+    gap: clamp(4px, 2cqh, 24px);
+  }
+  .head {
+    font-size: clamp(10px, min(3.6cqw, 7cqh), 34px); line-height: 1;
+    color: var(--green); font-weight: 700; letter-spacing: .3em;
+  }
+  .head span { color: var(--ink-3); font-weight: 400; letter-spacing: .1em; }
+  .kicker {
+    font-size: clamp(8px, min(2.6cqw, 5cqh), 22px);
+    color: var(--green-dim); letter-spacing: .14em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kicker b { color: var(--green); font-weight: 700; }
+  .card {
+    flex: 1; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; gap: .25em;
+  }
+  .year {
+    font-size: clamp(16px, min(9cqw, 17cqh), 120px); line-height: 1;
+    color: var(--green); font-weight: 700; letter-spacing: .04em;
+    text-shadow: 0 0 .4em rgba(53, 224, 124, .35);
+  }
+  .title {
+    font-size: clamp(11px, min(5cqw, 9cqh), 64px); line-height: 1.2;
+    color: var(--ink); font-weight: 700; text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+  /* long titles step down so title + English edition + author still fit */
+  .title.long { font-size: clamp(10px, min(3.8cqw, 7cqh), 50px); }
+  .title.xlong { font-size: clamp(9px, min(3cqw, 5.6cqh), 40px); }
+  .caret { color: var(--green); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .en, .author, .note { opacity: 0; transition: opacity .6s; }
+  .en { font-size: clamp(9px, min(3cqw, 5.6cqh), 32px); color: var(--ink-2); font-style: italic; }
+  .en::before { content: "EN · "; font-style: normal; color: var(--ink-3); }
+  .author { font-size: clamp(9px, min(3.4cqw, 6.4cqh), 36px); color: var(--ink-2); }
+  .note { font-size: clamp(8px, min(2.8cqw, 5.4cqh), 28px); color: var(--amber); }
+  .en:empty, .note:empty { display: none; }
+  .show { opacity: 1; }
+
+  .axis {
+    display: flex; align-items: center; gap: .8em;
+    font-size: clamp(8px, min(2.4cqw, 4.6cqh), 20px); color: var(--ink-3);
+  }
+  .track { position: relative; flex: 1; height: 1px; background: var(--line); }
+  .track i {
+    position: absolute; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px;
+    border-radius: 50%; background: var(--green-dim); opacity: .6;
+  }
+  .track i.on {
+    width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; opacity: 1;
+    background: var(--green); box-shadow: 0 0 8px var(--green);
+    transition: left .8s ease-in-out;
+  }
+  footer {
+    display: flex; justify-content: space-between;
+    font-size: clamp(8px, min(2.4cqw, 4.6cqh), 20px); color: var(--ink-3);
+  }
+  footer a { color: var(--green); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<main class="stage">
+  <div class="head">✦ SCI-FI BOOKS <span>· award winners</span></div>
+  <div class="kicker" id="kicker"></div>
+  <div class="card" aria-live="polite">
+    <div class="year" id="year"></div>
+    <div class="title" id="titlebox"><span id="title"></span><span class="caret">▌</span></div>
+    <div class="en" id="en"></div>
+    <div class="author" id="author"></div>
+    <div class="note" id="note"></div>
+  </div>
+  <div class="axis"><span id="first"></span><div class="track" id="track"></div><span id="last"></span></div>
+  <footer>
+    <a href="https://stamp9.github.io/" target="_blank" rel="noopener">stamp9.github.io</a>
+    <span id="count"></span>
+  </footer>
+</main>
+<script>
+  // Best-novel winners per award: [year, original title, English edition or '', author, note?].
+  // English edition = a published translation, never our own gloss. Add new winners each year.
+  const AWARDS = [
+    { name: 'Hugo Award', sub: 'Best Novel · Worldcon', lang: 'en', books: [
+      [1953, 'The Demolished Man', '', 'Alfred Bester', 'the first Hugo for Best Novel'],
+      [1955, "They'd Rather Be Right", '', 'Mark Clifton & Frank Riley'],
+      [1956, 'Double Star', '', 'Robert A. Heinlein'],
+      [1958, 'The Big Time', '', 'Fritz Leiber'],
+      [1959, 'A Case of Conscience', '', 'James Blish'],
+      [1960, 'Starship Troopers', '', 'Robert A. Heinlein'],
+      [1961, 'A Canticle for Leibowitz', '', 'Walter M. Miller, Jr.'],
+      [1962, 'Stranger in a Strange Land', '', 'Robert A. Heinlein'],
+      [1963, 'The Man in the High Castle', '', 'Philip K. Dick'],
+      [1964, 'Way Station', '', 'Clifford D. Simak'],
+      [1965, 'The Wanderer', '', 'Fritz Leiber'],
+      [1966, 'Dune', '', 'Frank Herbert', 'tie · shared with ...And Call Me Conrad'],
+      [1966, '...And Call Me Conrad', '', 'Roger Zelazny', 'tie · shared with Dune'],
+      [1967, 'The Moon Is a Harsh Mistress', '', 'Robert A. Heinlein'],
+      [1968, 'Lord of Light', '', 'Roger Zelazny'],
+      [1969, 'Stand on Zanzibar', '', 'John Brunner'],
+      [1970, 'The Left Hand of Darkness', '', 'Ursula K. Le Guin', 'the first novel by a woman to win'],
+      [1971, 'Ringworld', '', 'Larry Niven'],
+      [1972, 'To Your Scattered Bodies Go', '', 'Philip José Farmer'],
+      [1973, 'The Gods Themselves', '', 'Isaac Asimov'],
+      [1974, 'Rendezvous with Rama', '', 'Arthur C. Clarke'],
+      [1975, 'The Dispossessed', '', 'Ursula K. Le Guin'],
+      [1976, 'The Forever War', '', 'Joe Haldeman'],
+      [1977, 'Where Late the Sweet Birds Sang', '', 'Kate Wilhelm'],
+      [1978, 'Gateway', '', 'Frederik Pohl'],
+      [1979, 'Dreamsnake', '', 'Vonda N. McIntyre'],
+      [1980, 'The Fountains of Paradise', '', 'Arthur C. Clarke'],
+      [1981, 'The Snow Queen', '', 'Joan D. Vinge'],
+      [1982, 'Downbelow Station', '', 'C. J. Cherryh'],
+      [1983, "Foundation's Edge", '', 'Isaac Asimov'],
+      [1984, 'Startide Rising', '', 'David Brin'],
+      [1985, 'Neuromancer', '', 'William Gibson', 'won the Hugo, the Nebula and the Philip K. Dick Award'],
+      [1986, "Ender's Game", '', 'Orson Scott Card'],
+      [1987, 'Speaker for the Dead', '', 'Orson Scott Card'],
+      [1988, 'The Uplift War', '', 'David Brin'],
+      [1989, 'Cyteen', '', 'C. J. Cherryh'],
+      [1990, 'Hyperion', '', 'Dan Simmons'],
+      [1991, 'The Vor Game', '', 'Lois McMaster Bujold'],
+      [1992, 'Barrayar', '', 'Lois McMaster Bujold'],
+      [1993, 'A Fire Upon the Deep', '', 'Vernor Vinge', 'tie · shared with Doomsday Book'],
+      [1993, 'Doomsday Book', '', 'Connie Willis', 'tie · shared with A Fire Upon the Deep'],
+      [1994, 'Green Mars', '', 'Kim Stanley Robinson'],
+      [1995, 'Mirror Dance', '', 'Lois McMaster Bujold'],
+      [1996, 'The Diamond Age', '', 'Neal Stephenson'],
+      [1997, 'Blue Mars', '', 'Kim Stanley Robinson'],
+      [1998, 'Forever Peace', '', 'Joe Haldeman'],
+      [1999, 'To Say Nothing of the Dog', '', 'Connie Willis'],
+      [2000, 'A Deepness in the Sky', '', 'Vernor Vinge'],
+      [2001, 'Harry Potter and the Goblet of Fire', '', 'J. K. Rowling'],
+      [2002, 'American Gods', '', 'Neil Gaiman'],
+      [2003, 'Hominids', '', 'Robert J. Sawyer'],
+      [2004, 'Paladin of Souls', '', 'Lois McMaster Bujold'],
+      [2005, 'Jonathan Strange & Mr Norrell', '', 'Susanna Clarke'],
+      [2006, 'Spin', '', 'Robert Charles Wilson'],
+      [2007, 'Rainbows End', '', 'Vernor Vinge'],
+      [2008, "The Yiddish Policemen's Union", '', 'Michael Chabon'],
+      [2009, 'The Graveyard Book', '', 'Neil Gaiman'],
+      [2010, 'The Windup Girl', '', 'Paolo Bacigalupi', 'tie · shared with The City & the City'],
+      [2010, 'The City & the City', '', 'China Miéville', 'tie · shared with The Windup Girl'],
+      [2011, 'Blackout / All Clear', '', 'Connie Willis'],
+      [2012, 'Among Others', '', 'Jo Walton'],
+      [2013, 'Redshirts', '', 'John Scalzi'],
+      [2014, 'Ancillary Justice', '', 'Ann Leckie'],
+      [2015, 'The Three-Body Problem', '', 'Liu Cixin', 'the first translated novel to win · tr. Ken Liu'],
+      [2016, 'The Fifth Season', '', 'N. K. Jemisin', 'Broken Earth 1/3'],
+      [2017, 'The Obelisk Gate', '', 'N. K. Jemisin', 'Broken Earth 2/3'],
+      [2018, 'The Stone Sky', '', 'N. K. Jemisin', 'Broken Earth 3/3 · three years in a row'],
+      [2019, 'The Calculating Stars', '', 'Mary Robinette Kowal'],
+      [2020, 'A Memory Called Empire', '', 'Arkady Martine'],
+      [2021, 'Network Effect', '', 'Martha Wells'],
+      [2022, 'A Desolation Called Peace', '', 'Arkady Martine'],
+      [2023, 'Nettle & Bone', '', 'T. Kingfisher'],
+      [2024, 'Some Desperate Glory', '', 'Emily Tesh'],
+      [2025, 'The Tainted Cup', '', 'Robert Jackson Bennett'],
+      [2026, 'The Everlasting', '', 'Alix E. Harrow'],
+    ] },
+    { name: '星雲賞', sub: 'Seiun Award · Japan', lang: 'ja', books: [
+      [1970, '霊長類南へ', '', '筒井康隆 · Yasutaka Tsutsui', 'the first Seiun Award for a Japanese novel'],
+      [1971, '継ぐのは誰か？', '', '小松左京 · Sakyō Komatsu'],
+      [1972, '石の血脈', '', '半村良 · Ryō Hanmura'],
+      [1973, '鏡の国のアリス', '', '広瀬正 · Tadashi Hirose'],
+      [1974, '日本沈没', 'Japan Sinks', '小松左京 · Sakyō Komatsu'],
+      [1975, 'おれの血は他人の血', '', '筒井康隆 · Yasutaka Tsutsui'],
+      [1976, '七瀬ふたたび', '', '筒井康隆 · Yasutaka Tsutsui'],
+      [1977, 'サイコロ特攻隊', '', 'かんべむさし · Musashi Kanbe'],
+      [1978, '地球・精神分析記録', '', '山田正紀 · Masaki Yamada'],
+      [1979, '消滅の光輪', '', '眉村卓 · Taku Mayumura'],
+      [1980, '宝石泥棒', '', '山田正紀 · Masaki Yamada'],
+      [1981, '火星人先史', '', '川又千秋 · Chiaki Kawamata'],
+      [1982, '吉里吉里人', '', '井上ひさし · Hisashi Inoue'],
+      [1983, 'さよならジュピター', '', '小松左京 · Sakyō Komatsu'],
+      [1984, '敵は海賊・海賊版', '', '神林長平 · Chōhei Kanbayashi'],
+      [1985, '戦闘妖精・雪風', 'Yukikaze', '神林長平 · Chōhei Kanbayashi'],
+      [1986, 'ダーティペアの大逆転', 'The Dirty Pair Strike Again', '高千穂遙 · Haruka Takachiho'],
+      [1987, 'プリズム', '', '神林長平 · Chōhei Kanbayashi'],
+      [1988, '銀河英雄伝説', 'Legend of the Galactic Heroes', '田中芳樹 · Yoshiki Tanaka'],
+      [1989, 'バビロニア・ウェーブ', '', '堀晃 · Akira Hori'],
+      [1990, '上弦の月を喰べる獅子', '', '夢枕獏 · Baku Yumemakura'],
+      [1991, 'ハイブリッド・チャイルド', 'Hybrid Child', '大原まり子 · Mariko Ōhara'],
+      [1992, 'メルサスの少年', '', '菅浩江 · Hiroe Suga'],
+      [1993, 'ヴィーナス・シティ', '', '柾悟郎 · Gorō Masaki'],
+      [1994, '終わりなき索敵', '', '谷甲州 · Kōshū Tani'],
+      [1995, '機神兵団', '', '山田正紀 · Masaki Yamada'],
+      [1996, '引き潮のとき', '', '眉村卓 · Taku Mayumura'],
+      [1997, '星界の紋章', 'Crest of the Stars', '森岡浩之 · Hiroyuki Morioka'],
+      [1998, '敵は海賊・A級の敵', '', '神林長平 · Chōhei Kanbayashi'],
+      [1999, '彗星狩り', '', '笹本祐一 · Yūichi Sasamoto'],
+      [2000, 'グッドラック 戦闘妖精・雪風', 'Good Luck, Yukikaze', '神林長平 · Chōhei Kanbayashi'],
+      [2001, '永遠の森 博物館惑星', '', '菅浩江 · Hiroe Suga'],
+      [2002, 'ふわふわの泉', '', '野尻抱介 · Hōsuke Nojiri'],
+      [2003, '太陽の簒奪者', 'Usurper of the Sun', '野尻抱介 · Hōsuke Nojiri'],
+      [2004, '第六大陸', 'The Next Continent', '小川一水 · Issui Ogawa'],
+      [2005, 'ARIEL', '', '笹本祐一 · Yūichi Sasamoto'],
+      [2006, 'サマー/タイム/トラベラー', '', '新城カズマ · Kazuma Shinjō'],
+      [2007, '日本沈没 第二部', '', '小松左京・谷甲州 · Sakyō Komatsu & Kōshū Tani'],
+      [2008, '図書館戦争 シリーズ', '', '有川浩 · Hiro Arikawa'],
+      [2009, 'ハーモニー', 'Harmony', '伊藤計劃 · Project Itoh'],
+      [2010, 'グイン・サーガ', 'The Guin Saga', '栗本薫 · Kaoru Kurimoto'],
+      [2011, '去年はいい年になるだろう', '', '山本弘 · Hiroshi Yamamoto'],
+      [2012, '天獄と地国', '', '小林泰三 · Yasumi Kobayashi'],
+      [2013, '屍者の帝国', '', '伊藤計劃・円城塔 · Project Itoh & Toh EnJoe'],
+      [2014, 'コロロギ岳から木星トロヤへ', '', '小川一水 · Issui Ogawa'],
+      [2015, 'オービタル・クラウド', 'Orbital Cloud', '藤井太洋 · Taiyō Fujii'],
+      [2016, '怨讐星域', '', '梶尾真治 · Shinji Kajio'],
+      [2017, 'ウルトラマンF', '', '小林泰三 · Yasumi Kobayashi'],
+      [2018, 'あとは野となれ大和撫子', '', '宮内悠介 · Yūsuke Miyauchi'],
+      [2019, '零號琴', '', '飛浩隆 · Hirotaka Tobi'],
+      [2020, '天冥の標', '', '小川一水 · Issui Ogawa'],
+      [2021, '星系出雲の兵站', '', '林譲治 · Jōji Hayashi'],
+      [2022, '月とライカと吸血姫', 'Irina: The Vampire Cosmonaut', '牧野圭祐 · Keisuke Makino'],
+      [2023, 'プロトコル・オブ・ヒューマニティ', '', '長谷敏司 · Satoshi Hase'],
+      [2024, 'グラーフ・ツェッペリン あの夏の飛行船', '', '高野史緒 · Fumio Takano'],
+      [2025, '本好きの下剋上', 'Ascendance of a Bookworm', '香月美夜 · Miya Kazuki'],
+      [2026, '烙印の名はヒト', '', '人間六度 · Rokudo Ningen'],
+    ] },
+    { name: 'SF어워드', sub: 'Korean SF Award · Korea', lang: 'ko', books: [
+      [2014, '7인의 집행관', '', '김보영 · Kim Bo-young'],
+      [2015, '무안만용 가르바니온', '', 'dcdc'],
+      [2016, '깊은 바다 속 파랑', '', '노희준 · Noh Hee-jun'],
+      [2017, '시간 망명자', '', '김주영 · Kim Ju-young'],
+      [2018, '에셔의 손', '', '김백상 · Kim Baek-sang', 'won both Korean SF novel awards'],
+      [2019, '우로보로스', '', '임성순 · Im Seong-sun'],
+      [2020, '테세우스의 배', '', '이경희 · Lee Kyung-hee'],
+      [2021, '두 번째 달: 기록보관소 운행 일지', '', '최이수 · Choi Yi-su'],
+      [2022, '슈뢰딩거의 아이들', '', '최의택 · Choi Ui-taek'],
+      [2023, '모래도시 속 인형들', '', '이경희 · Lee Kyung-hee'],
+      [2024, '늑대 사냥', '', '김성일 · Kim Sung-il'],
+      [2025, '히아킨토스', '', '박애진 · Park Ae-jin'],
+    ] },
+    { name: '한국과학문학상', sub: 'Korea Science Literature Award · Korea', lang: 'ko', books: [
+      [2017, '에셔의 손', '', '김백상 · Kim Baek-sang', 'won both Korean SF novel awards'],
+      [2018, '기파', '', '박해울 · Park Hae-ul'],
+      [2019, '천 개의 파랑', 'A Thousand Blues', '천선란 · Cheon Seon-ran'],
+      [2022, '막 너머에 신이 있다면', '', '김준녕 · Kim Jun-nyeong'],
+      [2023, '라스트 젤리 샷', '', '청예 · Cheong Ye'],
+      [2024, '스파이라', '', '김아인 · Kim A-in'],
+      [2025, '몸으로 덮인 세계를 본 적 있는가', '', '공희경 · Gong Hui-gyeong'],
+      [2026, '가이던스', '', '노청엽 · No Cheong-yeop'],
+    ] },
+    { name: '华语科幻星云奖', sub: 'Chinese Nebula · China', lang: 'zh', books: [
+      [2010, '十字', '', '王晋康 · Wang Jinkang', 'tie · shared with 人形软件'],
+      [2010, '人形软件', '', '谭剑 · Tan Jian', 'tie · shared with 十字'],
+      [2011, '三体III·死神永生', "Death's End", '刘慈欣 · Liu Cixin', 'the Three-Body trilogy, book 3'],
+      [2012, '与吾同在', '', '王晋康 · Wang Jinkang'],
+      [2013, '荒潮', 'Waste Tide', '陈楸帆 · Chen Qiufan'],
+      [2014, '时间之墟', '', '宝树 · Baoshu'],
+      [2016, '银河之心III·逐影追光', '', '江波 · Jiang Bo', 'also won the Galaxy Award'],
+      [2017, '驱魔', 'Exorcism', '韩松 · Han Song'],
+      [2018, '机器之门', '', '江波 · Jiang Bo', 'also won the Galaxy Award'],
+      [2019, '固体海洋', '', '灰狐 · Hui Hu'],
+      [2021, '群星', '', '七月 · Qi Yue', '11th edition · April 2021'],
+      [2021, '穿越土星环', '', '谢云宁 · Xie Yunning', '12th edition · October 2021 · also won the Galaxy Award'],
+      [2022, '新新新日报馆：魔都暗影', '', '梁清散 · Liang Qingsan'],
+      [2023, '我们生活在南京', '', '天瑞说符 · Tianrui Shuofu'],
+      [2024, '井中之城', '', '刘洋 · Liu Yang'],
+      [2025, '金桃', '', '杨晚晴 · Yang Wanqing', 'also won the Galaxy Award'],
+    ] },
+    { name: '银河奖', sub: 'Galaxy Award · China', lang: 'zh', books: [
+      [2014, '逃出母宇宙', '', '王晋康 · Wang Jinkang'],
+      [2016, '天年', '', '何夕 · He Xi'],
+      [2017, '银河之心III·逐影追光', '', '江波 · Jiang Bo', 'also won the Chinese Nebula'],
+      [2019, '机器之门', '', '江波 · Jiang Bo', 'also won the Chinese Nebula'],
+      [2021, '穿越土星环', '', '谢云宁 · Xie Yunning', 'also won the Chinese Nebula'],
+      [2024, '造神年代', '', '严曦 · Yan Xi'],
+      [2025, '金桃', '', '杨晚晴 · Yang Wanqing', 'also won the Chinese Nebula'],
+    ] },
+    { name: "Grand Prix de l'Imaginaire", sub: 'Best novel · France', lang: 'fr', books: [
+      [1974, 'Le Temps incertain', 'Chronolysis', 'Michel Jeury'],
+      [1975, "L'Homme à rebours", '', 'Philippe Curval'],
+      [1976, 'Le Livre machine', '', 'Philippe Goy'],
+      [1977, 'Les Galaxiales', '', 'Michel Demuth'],
+      [1978, 'Delirium Circus', '', 'Pierre Pelot'],
+      [1979, 'La Maison du cygne', '', 'Yves et Ada Rémy'],
+      [1980, "L'Épouvante", '', 'Daniel Walther'],
+      [1981, "Vue en coupe d'une ville malade", '', 'Serge Brussolo'],
+      [1982, 'Le Silence de la cité', 'The Silent City', 'Élisabeth Vonarburg'],
+      [1983, "L'Enfant du cinquième nord", "The Children's Wing", 'Pierre Billon'],
+      [1984, 'Le Champ du rêveur', '', 'Jean-Pierre Hubert'],
+      [1985, 'Mémo', '', 'André Ruellan'],
+      [1986, 'Les Vautours', '', 'Joël Houssin'],
+      [1987, 'Rituel du mépris, variante Moldscher', '', 'Antoine Volodine'],
+      [1988, 'Opération « Serrures carnivores »', '', 'Serge Brussolo'],
+      [1989, 'Le Créateur chimérique', '', 'Joëlle Wintrebert'],
+      [1990, 'Sukran', '', 'Jean-Pierre Andrevon'],
+      [1991, 'Rivage des intouchables', '', 'Francis Berthelot'],
+      [1992, 'Le Temps du twist', '', 'Joël Houssin'],
+      [1993, 'Demain, une oasis', '', 'Ayerdhal'],
+      [1994, 'Les Guerriers du silence', '', 'Pierre Bordage'],
+      [1995, 'Arago', '', 'Laurent Genefort'],
+      [1996, 'Les Racines du mal', '', 'Maurice G. Dantec'],
+      [1997, 'Inner City', '', 'Jean-Marc Ligny'],
+      [1998, 'F.A.U.S.T.', '', 'Serge Lehman'],
+      [1999, 'Les Futurs Mystères de Paris', '', 'Roland C. Wagner'],
+      [2000, 'Le Successeur de pierre', '', 'Jean-Michel Truong'],
+      [2001, 'Bouvard, Pécuchet et les savants fous', '', 'René Reouven'],
+      [2002, 'Les Ombres de Wielstadt', '', 'Pierre Pevel'],
+      [2003, "Le Roi d'août", '', 'Michel Pagel'],
+      [2004, 'Dreamericana', '', 'Fabrice Colin'],
+      [2005, 'Transparences', '', 'Ayerdhal'],
+      [2006, 'La Horde du Contrevent', 'Horde of the Counterwind', 'Alain Damasio'],
+      [2007, "Le Goût de l'immortalité", '', 'Catherine Dufour'],
+      [2008, 'Bloodsilver', '', 'Wayne Barrow'],
+      [2009, "L'Autre Rive", '', 'Georges-Olivier Châteaureynaud'],
+      [2010, 'Le Déchronologue', '', 'Stéphane Beauverger', 'two ceremonies in 2010 · this one at the start of the year'],
+      [2010, 'Chien du heaume', '', 'Justine Niogret', 'two ceremonies in 2010 · this one at Saint-Malo in May'],
+      [2011, 'May le monde', '', 'Michel Jeury'],
+      [2012, 'Rêves de gloire', '', 'Roland C. Wagner'],
+      [2013, 'Du sel sous les paupières', '', 'Thomas Day'],
+      [2014, 'Anamnèse de Lady Star', '', 'L. L. Kloetzer'],
+      [2015, "Aucun homme n'est une île", '', 'Christophe Lambert'],
+      [2016, "Lum'en", '', 'Laurent Genefort'],
+      [2017, 'Latium', '', 'Romain Lucazeau'],
+      [2018, 'Toxoplasma', '', 'Sabrina Calvo'],
+      [2019, 'Le Cycle de Syffe', '', 'Patrick K. Dewdney'],
+      [2020, 'Les Furtifs', '', 'Alain Damasio'],
+      [2021, 'Le Sanctuaire', '', 'Laurine Roux'],
+      [2022, 'Vivonne', '', 'Jérôme Leroy'],
+      [2023, 'Les Flibustiers de la mer chimique', '', 'Marguerite Imbert'],
+      [2024, 'Du thé pour les fantômes', '', 'Chris Vuklisevic'],
+      [2025, "L'Ost céleste", '', 'Olivier Paquet'],
+      [2026, 'Aatea', '', 'Anouck Faure'],
+    ] },
+    { name: 'Kurd-Laßwitz-Preis', sub: 'Best novel · Germany', lang: 'de', books: [
+      [1981, 'Die Enkel der Raketenbauer', '', 'Georg Zauner'],
+      [1982, 'Der letzte Tag der Schöpfung', 'The Last Day of Creation', 'Wolfgang Jeschke'],
+      [1983, 'Im Jahr 95 nach Hiroshima', '', 'Richard Hey'],
+      [1984, 'Das Sakriversum', '', 'Thomas R. P. Mielke'],
+      [1985, 'Die Kälte des Weltraums', '', 'Herbert W. Franke'],
+      [1986, 'Endzeit', '', 'Herbert W. Franke'],
+      [1987, 'Die Wallfahrer', '', 'Carl Amery'],
+      [1988, 'Die Wolke', 'Fall-Out', 'Gudrun Pausewang'],
+      [1989, 'New York ist himmlisch', '', 'Norbert Stöbe'],
+      [1990, 'Midas oder die Auferstehung des Fleisches', 'Midas', 'Wolfgang Jeschke'],
+      [1991, 'Das Geheimnis der Krypta', '', 'Carl Amery'],
+      [1992, 'Fatous Staub', '', 'Christian Mähr'],
+      [1993, 'Die Goldenen Heiligen oder Columbus entdeckt Europa', '', 'Herbert Rosendorfer'],
+      [1994, 'Die Stimmen der Nacht', '', 'Thomas Ziegler'],
+      [1995, 'Das zerrissene Land', '', 'Hans Joachim Alpers'],
+      [1996, 'Die graue Eminenz', '', 'Hans Joachim Alpers'],
+      [1997, 'Solarstation', '', 'Andreas Eschbach'],
+      [1999, 'Das Jesus-Video', '', 'Andreas Eschbach'],
+      [2000, 'Kelwitts Stern', '', 'Andreas Eschbach'],
+      [2001, 'Lord Gamma', '', 'Michael Marrak'],
+      [2002, 'Quest', '', 'Andreas Eschbach'],
+      [2003, 'Imagon', '', 'Michael Marrak'],
+      [2004, 'Der Letzte seiner Art', '', 'Andreas Eschbach'],
+      [2005, 'Der Schwarm', 'The Swarm', 'Frank Schätzing'],
+      [2006, 'Das Cusanus-Spiel', 'The Cusanus Game', 'Wolfgang Jeschke'],
+      [2007, 'Auf der Spur des Engels', '', 'Herbert W. Franke'],
+      [2008, 'Ausgebrannt', '', 'Andreas Eschbach'],
+      [2009, 'Die Abschaffung der Arten', 'The Abolition of Species', 'Dietmar Dath'],
+      [2010, 'Ein König für Deutschland', '', 'Andreas Eschbach'],
+      [2011, 'Walpar Tonnraffir und der Zeigefinger Gottes', '', 'Uwe Post'],
+      [2012, 'Herr aller Dinge', 'Lord of All Things', 'Andreas Eschbach'],
+      [2013, 'Pulsarnacht', '', 'Dietmar Dath'],
+      [2014, 'Dschiheads', '', 'Wolfgang Jeschke'],
+      [2015, 'Drohnenland', '', 'Tom Hillenbrand'],
+      [2016, 'Das Schiff', '', 'Andreas Brandhorst'],
+      [2017, 'Omni', '', 'Andreas Brandhorst'],
+      [2018, 'Der Kanon mechanischer Seelen', '', 'Michael Marrak'],
+      [2019, 'NSA – Nationales Sicherheits-Amt', '', 'Andreas Eschbach'],
+      [2020, 'Perry Rhodan – Das größte Abenteuer', 'Perry Rhodan 0 – The Greatest Adventure', 'Andreas Eschbach'],
+      [2021, 'Eines Menschen Flügel', '', 'Andreas Eschbach'],
+      [2022, 'Nanopark', '', 'Uwe Hermann'],
+      [2023, 'Neongrau – Game Over im Neurosubstrat', '', 'Aiki Mira'],
+      [2024, 'Neurobiest', '', 'Aiki Mira'],
+      [2025, 'Proxi', '', 'Aiki Mira'],
+      [2026, 'Lyneham', '', 'Nils Westerboer'],
+    ] },
+    // Zajdel years are publication years; the prize is given the year after
+    { name: 'Nagroda Zajdla', sub: 'Zajdel Award · Poland', lang: 'pl', books: [
+      [1984, 'Paradyzja', '', 'Janusz A. Zajdel'],
+      [1985, 'Głowa Kasandry', '', 'Marek Baraniecki'],
+      [1988, 'Rozpad połowiczny', '', 'Edmund Wnuk-Lipiński'],
+      [1992, 'Król Bezmiarów', '', 'Feliks W. Kres'],
+      [1994, 'Krew elfów', 'Blood of Elves', 'Andrzej Sapkowski'],
+      [1995, 'Pieprzony los kataryniarza', '', 'Rafał A. Ziemkiewicz'],
+      [1996, 'Kolory sztandarów', '', 'Tomasz Kołodziejczak'],
+      [1997, 'Druga podobizna w alabastrze', '', 'Marek S. Huberath'],
+      [1998, 'Walc stulecia', '', 'Rafał A. Ziemkiewicz'],
+      [1999, 'Gniazdo światów', 'Nest of Worlds', 'Marek S. Huberath'],
+      [2000, 'Żmijowa harfa', '', 'Anna Brzezińska'],
+      [2001, 'Czarne oceany', '', 'Jacek Dukaj'],
+      [2002, 'Narrenturm', 'The Tower of Fools', 'Andrzej Sapkowski'],
+      [2003, 'Inne pieśni', '', 'Jacek Dukaj'],
+      [2004, 'Perfekcyjna niedoskonałość', '', 'Jacek Dukaj'],
+      [2005, 'Pan Lodowego Ogrodu, tom I', '', 'Jarosław Grzędowicz'],
+      [2006, 'Popiół i kurz', '', 'Jarosław Grzędowicz'],
+      [2007, 'Lód', 'Ice', 'Jacek Dukaj'],
+      [2008, 'Kameleon', '', 'Rafał Kosik'],
+      [2009, 'Przedksiężycowi, tom I', '', 'Anna Kańtoch'],
+      [2010, 'Król Bólu i pasikonik', '', 'Jacek Dukaj'],
+      [2011, 'Grillbar Galaktyka', '', 'Maja Lidia Kossakowska'],
+      [2012, 'Niebo ze stali', '', 'Robert M. Wegner'],
+      [2013, 'Cienioryt', '', 'Krzysztof Piskorski'],
+      [2014, 'Forta', '', 'Michał Cholewa'],
+      [2015, 'Pamięć wszystkich słów', '', 'Robert M. Wegner'],
+      [2016, 'Czterdzieści i cztery', '', 'Krzysztof Piskorski'],
+      [2017, 'Różaniec', '', 'Rafał Kosik'],
+      [2018, 'Każde martwe marzenie', '', 'Robert M. Wegner'],
+      [2019, 'Baśń o wężowym sercu albo wtóre słowo o Jakóbie Szeli', '', 'Radek Rak'],
+      [2020, 'Czerń nie zapomina', '', 'Agnieszka Hałas'],
+      [2021, 'Płomień', '', 'Magdalena Salik'],
+      [2022, 'Agla. Alef', '', 'Radek Rak'],
+      [2023, 'Lagrange. Listy z Ziemi', '', 'Istvan Vizvary'],
+      [2024, 'Rozdroże kruków', 'Crossroads of Ravens', 'Andrzej Sapkowski'],
+      [2025, 'Aż zobaczycie ogień', '', 'Paweł Majka'],
+    ] },
+  ];
+  for (const a of AWARDS)
+    a.books = a.books.map(([year, title, en, author, note = '']) => ({ year, title, en, author, note }));
+
+  const STEP_MS = 8000, TYPE_MS = 45, PER_AWARD = 4;
+  const $ = id => document.getElementById(id);
+  // CJK glyphs are about twice as wide as Latin ones in a monospace font
+  const width = s => [...s].reduce((n, c) => n + (c.codePointAt(0) > 0x2e80 ? 2 : 1), 0);
+
+  // start at a random award and book, so each monitor pass shows different winners
+  let ai = Math.floor(Math.random() * AWARDS.length), bi = 0, shown = 0, award, marker, typing;
+
+  function enterAward() {
+    award = AWARDS[ai];
+    bi = Math.floor(Math.random() * award.books.length);
+    shown = 0;
+    $('kicker').innerHTML = '<b></b> · <span></span>';
+    $('kicker').querySelector('b').textContent = award.name;
+    $('kicker').querySelector('span').textContent = award.sub;
+    $('kicker').lang = award.lang;
+
+    const first = award.books[0].year, last = award.books[award.books.length - 1].year;
+    award.at = year => `${(year - first) / (last - first) * 100}%`;
+    $('first').textContent = first;
+    $('last').textContent = last;
+    const track = $('track');
+    track.replaceChildren();
+    for (const year of new Set(award.books.map(b => b.year))) {
+      const dot = document.createElement('i');
+      dot.style.left = award.at(year);
+      track.appendChild(dot);
+    }
+    marker = document.createElement('i');
+    marker.className = 'on';
+    track.appendChild(marker);
+  }
+
+  function show() {
+    if (shown === PER_AWARD || !award) {
+      if (award) ai = (ai + 1) % AWARDS.length;
+      enterAward();
+    }
+    const b = award.books[bi];
+    $('year').textContent = b.year;
+    $('count').textContent = `${bi + 1} / ${award.books.length}`;
+    marker.style.left = award.at(b.year);
+    for (const id of ['en', 'author', 'note']) $(id).classList.remove('show');
+    $('en').textContent = b.en;
+    $('author').textContent = b.author;
+    $('note').textContent = b.note;
+    $('titlebox').lang = $('author').lang = award.lang;
+    const w = width(b.title);
+    $('titlebox').className = 'title' + (w > 44 ? ' xlong' : w > 26 ? ' long' : '');
+
+    clearInterval(typing);
+    const chars = [...b.title];
+    let n = 0;
+    $('title').textContent = '';
+    typing = setInterval(() => {
+      $('title').textContent = chars.slice(0, ++n).join('');
+      if (n >= chars.length) {
+        clearInterval(typing);
+        $('en').classList.add('show');
+        $('author').classList.add('show');
+        setTimeout(() => $('note').classList.add('show'), 500);
+      }
+    }, TYPE_MS);
+
+    bi = (bi + 1) % award.books.length;
+    shown++;
+    setTimeout(show, STEP_MS);
+  }
+  show();
+
+  // slow starfield drifting left; still frame when reduced motion is preferred
+  const canvas = $('stars'), ctx = canvas.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let stars = [];
+  function resize() {
+    canvas.width = innerWidth * devicePixelRatio;
+    canvas.height = innerHeight * devicePixelRatio;
+    const count = Math.round(innerWidth * innerHeight / 2200);
+    stars = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      z: Math.random() * .8 + .2, phase: Math.random() * 6.28,
+    }));
+  }
+  function draw(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const s of stars) {
+      if (!still) s.x = (s.x - s.z * .15 * devicePixelRatio + canvas.width) % canvas.width;
+      const twinkle = .55 + .45 * Math.sin(t / 900 + s.phase);
+      ctx.globalAlpha = s.z * twinkle * .7;
+      ctx.fillStyle = s.z > .85 ? '#d8f5e0' : '#35e07c';
+      ctx.fillRect(s.x, s.y, s.z * 1.6 * devicePixelRatio, s.z * 1.6 * devicePixelRatio);
+    }
+    if (!still) requestAnimationFrame(draw);
+  }
+  addEventListener('resize', () => { resize(); if (still) draw(0); });
+  resize();
+  requestAnimationFrame(draw);
+</script>
+</body>
+</html>
