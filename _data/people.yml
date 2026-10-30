@@ -94,6 +94,13 @@ piyusha:
     webpage: "https://bio.link/piyusha1710"
     unix_login: piyusha
 
+sinvel:
+    display_name: "Singvalliyappa Velayutham"
+    role: research-assistant
+    image: "/img/people/sinvel.jpg"
+    webpage: "https://val0007.github.io/Portfolio-md/"
+    unix_login: sinvel
+
 larissa:
     display_name: "Larissa Schmid"
     role: alum
