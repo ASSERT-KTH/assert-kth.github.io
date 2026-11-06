@@ -25,3 +25,8 @@ news reports, and publisher or SFE records for English editions. Years with
 no award are left out. Zajdel years are publication years. Not yet found:
 2026 SF어워드 and 2026 华语科幻星云奖. Add new winners to `AWARDS` in
 `index.html` after each ceremony.
+
+Fonts: the cell ships its own font subsets in `fonts/` (JetBrains Mono, Noto
+Sans JP, Noto Sans SC, Nanum Gothic Coding; SIL OFL), so CJK titles render on
+the department TV. After you add winners, run `fonts/subset.py` to add the new
+glyphs.
