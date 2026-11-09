@@ -135,6 +135,10 @@
 
   function frame(t) {
     const dt = Math.min((t - (last || t)) / 1000, 0.05); last = t;
+    // while the tile is hidden (0×0) wait for a real size: stepping now would scale every
+    // ball's speed to 0, and a speed of 0 never grows back
+    if (!W || !H) { requestAnimationFrame(frame); return; }
+    if (!balls.length) reset();
     if (phase === 'run') {
       step(dt);
       if (balls.length >= MAX) { phase = 'done'; phaseEnd = t + SHOW_MS; msg.classList.add('show'); }
@@ -144,7 +148,7 @@
   }
 
   new ResizeObserver(resize).observe(cv);
-  resize(); reset(); requestAnimationFrame(frame);
+  resize(); requestAnimationFrame(frame); // first frame with a real size starts the run
 </script>
 </body>
 </html>
