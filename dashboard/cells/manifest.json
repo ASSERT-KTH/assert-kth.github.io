@@ -92,6 +92,13 @@
       "name": "Yogya Gamage",
       "role": "PhD",
       "cell": false
+    },
+    {
+      "id": "piyusha",
+      "name": "Piyusha Patil",
+      "role": "Research Assistant",
+      "cell": false,
+      "image": "/img/people/piyusha.jpg"
     }
   ]
 }
