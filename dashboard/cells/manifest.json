@@ -35,7 +35,7 @@
       "id": "javierron",
       "name": "Javier Ron",
       "role": "PhD",
-      "cell": false,
+      "cell": true,
       "image": "/img/people/javierron.png"
     },
     {
@@ -63,7 +63,7 @@
       "id": "andre",
       "name": "André Silva",
       "role": "PhD",
-      "cell": false,
+      "cell": true,
       "image": "/img/people/andre.jpeg"
     },
     {
@@ -84,7 +84,7 @@
       "id": "raphina",
       "name": "Raphina Liu",
       "role": "PhD",
-      "cell": false,
+      "cell": true,
       "image": "/img/people/raphina.jpeg"
     },
     {
@@ -94,9 +94,16 @@
       "cell": false
     },
     {
+      "id": "piyusha",
+      "name": "Piyusha Patil",
+      "role": "Research Assistant",
+      "cell": false,
+      "image": "/img/people/piyusha.jpg"
+    },
+    {
       "id": "sinvel",
       "name": "Singvalliyappa Velayutham",
-      "role": "RA",
+      "role": "Research Assistant",
       "cell": true,
       "image": "/img/people/sinvel.jpg"
     }

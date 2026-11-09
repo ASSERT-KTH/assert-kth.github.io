@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
+    --green: #35e07c; --green-dim: #1f9e57; --amber: #e0b435; --line: #1d3323;
+    --relu: #e8735a; --siren: #5cc8e0; --ff: #e0b435; --hash: #35e07c;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  /* sized against the cell's own frame (container units), so it fills the
+     fullscreen monitor scene and collapses to the leader in the grid tile */
+  main { flex: 1; min-height: 0; container-type: size; }
+  .stage {
+    height: 100%; display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: clamp(6px, 1.6cqmin, 22px);
+    padding: clamp(8px, 2cqmin, 32px);
+    font-size: clamp(10px, min(1.25cqw, 2.2cqh), 22px);
+  }
+  .bar { display: flex; align-items: baseline; gap: 1.2em; white-space: nowrap; overflow: hidden; }
+  .bar .title { color: var(--green); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .bar .art { color: var(--ink); }
+  .bar .art em { font-style: italic; }
+  .bar .run { margin-left: auto; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .bar .run span { color: var(--ink-2); }
+
+  .lanes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(6px, 1.2cqmin, 18px); }
+  .lane { display: flex; flex-direction: column; gap: .35em; min-width: 0; }
+  .lane .head { display: flex; align-items: baseline; gap: .5em; white-space: nowrap; }
+  .lane .name { font-weight: 700; color: var(--c, var(--ink)); }
+  .lane .rank { margin-left: auto; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .lane .sub { color: var(--ink-3); font-size: .8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lane canvas {
+    width: 100%; aspect-ratio: 5 / 4; display: block;
+    image-rendering: pixelated; background: #000;
+    border: 1px solid var(--line);
+  }
+  .lane.lead canvas { border-color: var(--c); box-shadow: 0 0 0 1px var(--c); }
+  .lane .psnr { font-size: 1.5em; font-weight: 700; color: var(--c, var(--ink)); font-variant-numeric: tabular-nums; }
+  .lane .psnr small { font-size: .55em; font-weight: 400; color: var(--ink-3); }
+
+  .panels { display: grid; grid-template-columns: 1.15fr .8fr 1.75fr; gap: clamp(8px, 1.6cqmin, 24px); min-height: 0; }
+  .panel { border: 1px solid var(--line); padding: .7em .9em; min-height: 0; display: flex; flex-direction: column; gap: .5em; overflow: hidden; }
+  .panel .lbl { color: var(--ink-3); font-size: .8em; letter-spacing: .08em; text-transform: uppercase; flex: none; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: .85em; }
+  td { padding: .28em .3em; white-space: nowrap; }
+  td.r { text-align: right; }
+  td.dim { color: var(--ink-3); }
+  tr.lead td { color: var(--ink); }
+  .dot { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: var(--c); margin-right: .5em; }
+  #chart { flex: 1; min-height: 0; width: 100%; }
+  #log { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; font-size: .7em; line-height: 1.5; }
+  #log div { white-space: pre; color: var(--ink-2); }
+  #log .ev { color: var(--amber); }
+  #log .hd { color: var(--ink-3); }
+  #log b { color: var(--c); font-weight: 400; }
+
+  /* end of run: how the winner got there, and where every network is still wrong */
+  .results { display: none; grid-template-columns: 1fr; min-height: 0; }
+  .stage.done .panels { display: none; }
+  .stage.done .results { display: grid; }
+  .strip { flex: 1; min-height: 0; display: grid; gap: clamp(8px, 1.6cqmin, 24px); grid-template-columns: repeat(5, 1fr); }
+  .strip figure { min-height: 0; display: flex; flex-direction: column; gap: .3em; }
+  .strip canvas { flex: 1; min-height: 0; width: 100%; object-fit: contain; object-position: left top; image-rendering: pixelated; display: block; }
+  .strip figcaption { flex: none; color: var(--ink-3); font-size: .9em; font-variant-numeric: tabular-nums; }
+  .lane .sub.err { color: var(--amber); }
+  .winner { color: var(--c); font-weight: 700; font-size: 1.3em; flex: none; }
+
+  .caption { color: var(--ink); line-height: 1.45; text-wrap: balance; }
+  .caption .fine { display: block; color: var(--ink-3); font-size: .85em; }
+
+  /* small grid tile: just the leading network and one live line */
+  .tiny { display: none; }
+  @container (max-height: 330px) {
+    .stage { grid-template-rows: auto minmax(0, 1fr) auto; font-size: 11px; gap: 4px; padding: 6px 8px; }
+    .bar .title, .bar .run, .panels, .results, .caption, .lane .head, .lane .sub, .lane .psnr, .lane.target { display: none !important; }
+    .lanes { grid-template-columns: 1fr; min-height: 0; }
+    .lane { display: none; min-height: 0; }
+    .lane.lead { display: flex; align-items: center; }
+    .lane.lead canvas { width: auto; height: 100%; max-width: 100%; box-shadow: none; }
+    .tiny { display: block; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tiny b { color: var(--c); }
+  }
+
+  footer {
+    flex: none; display: flex; align-items: baseline; gap: .7rem;
+    padding: 5px 10px; border-top: 1px solid var(--line);
+    font-size: 11px; color: var(--ink-3);
+  }
+  footer .clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+  a { color: var(--green-dim); text-decoration: none; }
+  a:hover { color: var(--green); }
+</style>
+</head>
+<body>
+<main>
+  <div class="stage" id="stage">
+    <div class="bar">
+      <span class="title">race</span>
+      <span class="art" id="art"></span>
+      <span class="run">run <span id="runname"></span> · seed <span id="seed"></span> · <span id="clock">00:00</span></span>
+    </div>
+    <div class="lanes" id="lanes">
+      <div class="lane target">
+        <div class="head"><span class="name">target</span></div>
+        <div class="sub">160×128 px · 61,440 values</div>
+        <canvas id="target" width="160" height="128"></canvas>
+        <div class="psnr">∞ <small>dB</small></div>
+      </div>
+    </div>
+    <div class="panels">
+      <div class="panel"><div class="lbl">leaderboard · PSNR dB, higher is better · steps · speed</div><table id="board"></table></div>
+      <div class="panel"><div class="lbl">PSNR (dB) over time</div><canvas id="chart"></canvas></div>
+      <div class="panel"><div class="lbl">$ tail -f train.log</div><div id="log"></div></div>
+    </div>
+    <div class="results">
+      <div class="panel"><div class="winner" id="winner"></div><div class="lbl">how it got there · and, above, where each network is still wrong (brighter = bigger error)</div><div class="strip" id="strip"></div></div>
+    </div>
+    <p class="caption">
+      This is a race between four tiny neural networks with the same theoretical capacity learning the same painting with the same compute.
+      <span class="fine">Each has exactly <span id="cap">8,707</span> trainable numbers and the same CPU time.</span>
+    </p>
+    <div class="tiny" id="tiny"></div>
+  </div>
+</main>
+<footer>
+  <a href="https://andre15silva.github.io/" target="_blank" rel="noopener">andre15silva.github.io →</a>
+  <span class="clock" id="foot"></span>
+</footer>
+<script src="paintings.js"></script>
+<script>
+const RUN_MS = 60000;          // one race per painting
+const RESULTS_MS = 12000;      // the last part of a run shows the winner
+const RATE = 0.5;              // CPU-seconds of training per second, for every network
+const SNAPS = [1, 4, 12, 40];  // seconds at which the winner's guess is kept for the strip
+const $ = id => document.getElementById(id);
+
+const LANES = [
+  { key: 'relu', name: 'ReLU MLP', sub: 'x,y → 3×64 ReLU → rgb', log: 'MLP(2→64→64→64→3, ReLU)',
+    cfg: { enc: 'raw', hid: [64, 64, 64], act: 'relu', BS: 256, lr: 1e-2 } },
+  { key: 'siren', name: 'SIREN', sub: 'sine activations, ω₀=30', log: 'SIREN(2→64→64→64→3, ω₀=30)',
+    cfg: { enc: 'raw', hid: [64, 64, 64], act: 'sin', w0: 30, BS: 256, lr: 3e-4 } },
+  { key: 'ff', name: 'Fourier features', sub: '67 random sinusoids → 2×64', log: 'FourierFeatures(67, σ=4) → MLP(67→64→64→3)',
+    cfg: { enc: 'ff', F: 67, SIG: 4, hid: [64, 64], act: 'relu', BS: 256, lr: 3e-3 } },
+  { key: 'hash', name: 'Hash grid', sub: '8 levels × 504 entries → 32', log: 'HashGrid(L=8, T=504, F=2) → MLP(16→32→3)',
+    cfg: { enc: 'hash', L: 8, FD: 2, T: 504, NMIN: 4, hid: [32], act: 'relu', BS: 512, lr: 5e-3, lrEnc: 2e-2 } },
+];
+
+/* ---------- the training engine: runs inside a Web Worker (one per network) ---------- */
+
+function engine(self) {
+  let net = null, W, H, N, target, rate, renderEvery, paused = false;
+  let active = 0, last = 0, trainMs = 0, lastRender = -1e9, ema = null, gnorm = 0, budgetMs;
+
+  function makeNet(cfg, seed) {
+    const BS = cfg.BS;
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const X = new Float32Array(N), Y = new Float32Array(N);
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { X[j * W + i] = (i + .5) / W; Y[j * W + i] = (j + .5) / H; }
+
+    // encoder: how a pixel's (x, y) is presented to the network
+    let IN, encode, encBack = null, encUpdate = null, encParams = 0;
+    if (cfg.enc === 'raw') {
+      IN = 2;
+      encode = (idx, n, out) => { for (let r = 0; r < n; r++) { out[2 * r] = X[idx[r]] * 2 - 1; out[2 * r + 1] = Y[idx[r]] * 2 - 1; } };
+    } else if (cfg.enc === 'ff') {
+      // fixed random waves sin(2π·b·(x, y) + φ): drawn from the seed, never trained
+      const F = cfg.F; IN = F;
+      const B = new Float32Array(2 * F).map(() => gauss() * cfg.SIG);
+      const phase = new Float32Array(F).map(() => 2 * Math.PI * rnd());
+      const feats = new Float32Array(N * IN);
+      for (let p = 0; p < N; p++) {
+        const x = X[p] * 2 - 1, y = Y[p] * 2 - 1;
+        for (let f = 0; f < F; f++)
+          feats[p * IN + f] = Math.sin(2 * Math.PI * (B[2 * f] * x + B[2 * f + 1] * y) + phase[f]);
+      }
+      encode = (idx, n, out) => { for (let r = 0; r < n; r++) out.set(feats.subarray(idx[r] * IN, idx[r] * IN + IN), r * IN); };
+    } else {
+      // multiresolution hash grid (Instant-NGP), bilinear, trained with lazy sparse Adam
+      const Lv = cfg.L, FD = cfg.FD, T = cfg.T, NMAX = Math.max(W, H); IN = Lv * FD;
+      const res = [], dense = [], gr = Math.exp((Math.log(NMAX) - Math.log(cfg.NMIN)) / (Lv - 1));
+      for (let l = 0; l < Lv; l++) { res.push(Math.floor(cfg.NMIN * gr ** l)); dense.push((res[l] + 1) ** 2 <= T); }
+      const tab = new Float32Array(Lv * T * FD).map(() => (rnd() * 2 - 1) * 1e-4);
+      const g = new Float32Array(tab.length), m = new Float32Array(tab.length), v = new Float32Array(tab.length);
+      const tstep = new Int32Array(Lv * T), mark = new Uint8Array(Lv * T), touched = new Int32Array(BS * Lv * 4);
+      const cIdx = new Int32Array(BS * Lv * 4), cW = new Float32Array(BS * Lv * 4);
+      let nt = 0;
+      encParams = tab.length;
+      encode = (idx, n, out) => {
+        for (let r = 0; r < n; r++) {
+          const p = idx[r], x = X[p], y = Y[p];
+          for (let l = 0; l < Lv; l++) {
+            const R = res[l], fx = x * R, fy = y * R, ix = fx | 0, iy = fy | 0, tx = fx - ix, ty = fy - iy;
+            const o = (r * Lv + l) * 4, base = l * T;
+            let i00, i10, i01, i11;
+            if (dense[l]) { const s = R + 1; i00 = iy * s + ix; i10 = i00 + 1; i01 = i00 + s; i11 = i01 + 1; }
+            else {
+              const h0 = Math.imul(iy, -1640531535), h1 = Math.imul(iy + 1, -1640531535);
+              i00 = ((ix ^ h0) >>> 0) % T; i10 = (((ix + 1) ^ h0) >>> 0) % T; i01 = ((ix ^ h1) >>> 0) % T; i11 = (((ix + 1) ^ h1) >>> 0) % T;
+            }
+            cIdx[o] = base + i00; cIdx[o + 1] = base + i10; cIdx[o + 2] = base + i01; cIdx[o + 3] = base + i11;
+            cW[o] = (1 - tx) * (1 - ty); cW[o + 1] = tx * (1 - ty); cW[o + 2] = (1 - tx) * ty; cW[o + 3] = tx * ty;
+            for (let f = 0; f < FD; f++) {
+              let s = 0; for (let c = 0; c < 4; c++) s += cW[o + c] * tab[cIdx[o + c] * FD + f];
+              out[r * IN + l * FD + f] = s;
+            }
+          }
+        }
+      };
+      encBack = (n, dIn) => {
+        nt = 0;
+        for (let r = 0; r < n; r++) for (let l = 0; l < Lv; l++) {
+          const o = (r * Lv + l) * 4;
+          for (let c = 0; c < 4; c++) {
+            const e = cIdx[o + c], w = cW[o + c];
+            if (!mark[e]) { mark[e] = 1; touched[nt++] = e; }
+            for (let f = 0; f < FD; f++) g[e * FD + f] += w * dIn[r * IN + l * FD + f];
+          }
+        }
+      };
+      encUpdate = (lr, t) => {
+        const b1 = .9, b2 = .99, c1 = 1 - b1 ** t, c2 = 1 - b2 ** t;
+        for (let k = 0; k < nt; k++) {
+          const e = touched[k]; mark[e] = 0;
+          const skip = t - 1 - tstep[e]; tstep[e] = t;
+          const d1 = skip > 0 ? b1 ** skip : 1, d2 = skip > 0 ? b2 ** skip : 1;
+          for (let f = 0; f < FD; f++) {
+            const i = e * FD + f, gi = g[i]; g[i] = 0;
+            m[i] = b1 * m[i] * d1 + (1 - b1) * gi; v[i] = b2 * v[i] * d2 + (1 - b2) * gi * gi;
+            tab[i] -= lr * (m[i] / c1) / (Math.sqrt(v[i] / c2) + 1e-15);
+          }
+        }
+      };
+    }
+
+    // MLP head
+    const SIN = cfg.act === 'sin', w0 = cfg.w0 || 30, sizes = [IN, ...cfg.hid, 3];
+    const L = sizes.slice(1).map((n, k) => {
+      const n0 = sizes[k];
+      const w = new Float32Array(n0 * n).map(() => SIN
+        ? (rnd() * 2 - 1) * (k === 0 ? 1 / n0 : Math.sqrt(6 / n0) / w0)
+        : gauss() * Math.sqrt(2 / n0));
+      const l = { n0, n1: n, w, b: new Float32Array(n) };
+      for (const p of ['w', 'b']) for (const s of ['g', 'm', 'v']) l[s + p] = new Float32Array(l[p].length);
+      return l;
+    });
+    const acts = sizes.map(n => new Float32Array(BS * n)), pre = sizes.map(n => new Float32Array(BS * n));
+    const dl = sizes.map(n => new Float32Array(BS * n)), idx = new Int32Array(BS);
+    let t = 0;
+
+    function forward(n) {
+      encode(idx, n, acts[0]);
+      for (let k = 0; k < L.length; k++) {
+        const l = L[k], x = acts[k], y = acts[k + 1], z = pre[k + 1], last = k === L.length - 1;
+        for (let r = 0; r < n; r++) {
+          const xo = r * l.n0, yo = r * l.n1;
+          for (let o = 0; o < l.n1; o++) {
+            let s = l.b[o]; const wo = o * l.n0;
+            for (let i = 0; i < l.n0; i++) s += l.w[wo + i] * x[xo + i];
+            if (last) y[yo + o] = 1 / (1 + Math.exp(-s));
+            else if (SIN) { z[yo + o] = s; y[yo + o] = Math.sin(w0 * s); }
+            else y[yo + o] = s > 0 ? s : 0;
+          }
+        }
+      }
+    }
+
+    function step(lr, lrEnc) {
+      for (let r = 0; r < BS; r++) idx[r] = (rnd() * N) | 0;
+      forward(BS);
+      let loss = 0; const out = acts[L.length], dOut = dl[L.length];
+      for (let r = 0; r < BS; r++) for (let c = 0; c < 3; c++) {
+        const p = out[r * 3 + c], e = p - target[idx[r] * 3 + c];
+        loss += e * e; dOut[r * 3 + c] = 2 * e / BS * p * (1 - p);
+      }
+      let gn = 0;
+      for (let k = L.length - 1; k >= 0; k--) {
+        const l = L[k], x = acts[k], dy = dl[k + 1], dx = dl[k], bk = k || encBack;
+        l.gw.fill(0); l.gb.fill(0); if (bk) dx.fill(0, 0, BS * l.n0);
+        for (let r = 0; r < BS; r++) {
+          const xo = r * l.n0, yo = r * l.n1;
+          for (let o = 0; o < l.n1; o++) {
+            const gy = dy[yo + o]; if (gy === 0) continue;
+            l.gb[o] += gy; const wo = o * l.n0;
+            for (let i = 0; i < l.n0; i++) { l.gw[wo + i] += gy * x[xo + i]; if (bk) dx[xo + i] += gy * l.w[wo + i]; }
+          }
+        }
+        if (k) {
+          if (SIN) { const z = pre[k]; for (let i = 0; i < BS * l.n0; i++) dx[i] *= w0 * Math.cos(w0 * z[i]); }
+          else for (let i = 0; i < BS * l.n0; i++) if (x[i] <= 0) dx[i] = 0;
+        }
+      }
+      t++;
+      if (encBack) { encBack(BS, dl[0]); encUpdate(lrEnc, t); }
+      const b1 = .9, b2 = .999, c1 = 1 - b1 ** t, c2 = 1 - b2 ** t;
+      for (const l of L) for (const p of ['w', 'b']) {
+        const w = l[p], g = l['g' + p], m = l['m' + p], v = l['v' + p];
+        for (let i = 0; i < w.length; i++) {
+          gn += g[i] * g[i];
+          m[i] = b1 * m[i] + (1 - b1) * g[i]; v[i] = b2 * v[i] + (1 - b2) * g[i] * g[i];
+          w[i] -= lr * (m[i] / c1) / (Math.sqrt(v[i] / c2) + 1e-8);
+        }
+      }
+      return { loss: loss / (BS * 3), gnorm: Math.sqrt(gn) };
+    }
+
+    // full-image prediction (RGBA) and its error against the target
+    function render() {
+      const rgba = new Uint8ClampedArray(N * 4); let se = 0;
+      for (let s = 0; s < N; s += BS) {
+        const n = Math.min(BS, N - s); for (let r = 0; r < n; r++) idx[r] = s + r;
+        forward(n);
+        const out = acts[L.length];
+        for (let r = 0; r < n; r++) for (let c = 0; c < 3; c++) {
+          const v = out[r * 3 + c], e = v - target[(s + r) * 3 + c];
+          se += e * e; rgba[(s + r) * 4 + c] = v * 255;
+        }
+        for (let r = 0; r < n; r++) rgba[(s + r) * 4 + 3] = 255;
+      }
+      return { rgba, psnr: -10 * Math.log10(se / (N * 3)) };
+    }
+
+    const nParams = encParams + L.reduce((s, l) => s + l.w.length + l.b.length, 0);
+    return { step, render, nParams, get t() { return t; } };
+  }
+
+  // cosine learning-rate decay over the run's training budget, after a short warmup
+  function lrScale() {
+    const p = Math.min(1, trainMs / budgetMs);
+    return Math.min(1, p / .02) * (.1 + .9 * .5 * (1 + Math.cos(Math.PI * p)));
+  }
+
+  function loop() {
+    if (paused || !net) return;
+    const now = performance.now(); active += now - last; last = now;
+    // train until this network has used its share of CPU time so far, so every
+    // network in the race gets exactly the same compute
+    const t0 = performance.now(), cfg = net.cfg;
+    while (trainMs < rate * active && performance.now() - t0 < 25) {
+      const s0 = performance.now(), sc = lrScale();
+      const r = net.step(cfg.lr * sc, (cfg.lrEnc || 0) * sc);
+      trainMs += performance.now() - s0;
+      ema = ema == null ? r.loss : .98 * ema + .02 * r.loss; gnorm = r.gnorm;
+    }
+    if (now - lastRender > renderEvery) {
+      lastRender = now;
+      const { rgba, psnr } = net.render();
+      self.postMessage({ type: 'frame', rgba, psnr, step: net.t, loss: ema, gnorm,
+        lr: cfg.lr * lrScale(), trainMs }, [rgba.buffer]);
+    }
+    setTimeout(loop, 4);
+  }
+
+  self.onmessage = e => {
+    const m = e.data;
+    if (m.cmd === 'init') {
+      ({ W, H, target, rate, renderEvery } = m); N = W * H; budgetMs = m.runMs * rate;
+      net = makeNet(m.cfg, m.seed); net.cfg = m.cfg;
+      self.postMessage({ type: 'ready', nParams: net.nParams });
+      last = performance.now(); loop();
+    } else if (m.cmd === 'pause') paused = true;
+    else if (m.cmd === 'resume') { if (paused) { paused = false; last = performance.now(); loop(); } }
+  };
+}
+
+// each network trains in its own Worker; if Workers are unavailable, the same
+// engine runs on the page itself (at a gentler pace)
+let useWorkers = true;
+function spawn(onmessage) {
+  if (useWorkers) {
+    try {
+      const url = URL.createObjectURL(new Blob([`(${engine})(self)`], { type: 'text/javascript' }));
+      const w = new Worker(url);
+      w.onmessage = onmessage;
+      w.onerror = () => { useWorkers = false; };
+      return w;
+    } catch { useWorkers = false; }
+  }
+  const inner = { postMessage: data => setTimeout(() => onmessage({ data })) };
+  engine(inner);
+  return {
+    postMessage: data => setTimeout(() => inner.onmessage({ data })),
+    terminate: () => inner.onmessage({ data: { cmd: 'pause' } }),
+  };
+}
+
+/* ---------- the race ---------- */
+
+const ADJ = ['lucid', 'patient', 'quiet', 'curious', 'bright', 'steady', 'gentle', 'bold', 'nimble', 'tidy'];
+const NOUN = ['labyrinth', 'library', 'arena', 'lattice', 'mosaic', 'atlas', 'gallery', 'stair', 'shelf', 'tile'];
+const pick = a => a[(Math.random() * a.length) | 0];
+const fmt = n => n.toLocaleString('en');
+const pad = (s, n) => String(s).padEnd(n);
+const css = getComputedStyle(document.documentElement);
+LANES.forEach(l => { l.color = css.getPropertyValue('--' + l.key).trim(); });
+
+// lane DOM, built once
+for (const l of LANES) {
+  const el = document.createElement('div');
+  el.className = 'lane'; el.style.setProperty('--c', `var(--${l.key})`);
+  el.innerHTML = `<div class="head"><span class="name">${l.name}</span><span class="rank"></span></div>
+    <div class="sub">${l.sub}</div><canvas width="160" height="128"></canvas>
+    <div class="psnr">–<small> dB</small></div>`;
+  $('lanes').appendChild(el);
+  l.el = el; l.ctx = el.querySelector('canvas').getContext('2d');
+  l.rankEl = el.querySelector('.rank'); l.psnrEl = el.querySelector('.psnr');
+}
+
+let painting = 0, run = null;
+
+function logLine(html, cls = '') {
+  const log = $('log'), d = document.createElement('div');
+  d.innerHTML = html; if (cls) d.className = cls;
+  log.appendChild(d);
+  while (log.children.length > 40) log.firstChild.remove();
+}
+const tag = l => `<b style="--c:${l.color}">[${pad(l.key, 5)}]</b>`;
+
+function startRun() {
+  if (run) run.lanes.forEach(r => r.worker.terminate());
+  const P = PAINTINGS[painting]; painting = (painting + 1) % PAINTINGS.length;
+  const W = P.w, H = P.h, bytes = Uint8Array.from(atob(P.rgb), c => c.charCodeAt(0));
+  const target = new Float32Array(W * H * 3).map((_, i) => bytes[i] / 255);
+  const img = $('target').getContext('2d').createImageData(W, H);
+  for (let i = 0; i < W * H; i++) { img.data.set(bytes.subarray(i * 3, i * 3 + 3), i * 4); img.data[i * 4 + 3] = 255; }
+  $('target').getContext('2d').putImageData(img, 0, 0);
+
+  const seed = (Math.random() * 1e6) | 0;
+  run = { start: performance.now(), seed, P, bytes, done: false, leader: null, snaps: {}, lanes: [] };
+  $('art').innerHTML = `<em>${P.title}</em> · Maria Helena Vieira da Silva · ${P.year}`;
+  $('runname').textContent = `${pick(ADJ)}-${pick(NOUN)}-${(seed % 97) + 1}`;
+  $('seed').textContent = seed;
+  $('stage').classList.remove('done');
+  showingErr = null;
+  for (const l of LANES) { const sub = l.el.querySelector('.sub'); sub.textContent = l.sub; sub.classList.remove('err'); }
+  $('log').innerHTML = '';
+  logLine(`$ python train.py --target "${P.title}" --seed ${seed} --compute-share ${RATE}`, 'hd');
+  logLine(`device=cpu  workers=${useWorkers ? LANES.length : 0}  dtype=float32  pixels=${fmt(W * H)}  loss=mse`, 'hd');
+
+  run.lanes = LANES.map((l, i) => {
+    const r = { l, psnr: null, step: 0, loss: null, hist: [], lastLog: 0, nParams: 0 };
+    l.ctx.fillStyle = '#000'; l.ctx.fillRect(0, 0, W, H);
+    l.psnrEl.innerHTML = `–<small> dB</small>`; l.rankEl.textContent = '';
+    r.worker = spawn(e => onMsg(r, e.data));
+    r.worker.postMessage({ cmd: 'init', W, H, target, cfg: l.cfg, seed: seed + i,
+      rate: useWorkers ? RATE : RATE / LANES.length, renderEvery: useWorkers ? 600 : 2000, runMs: RUN_MS });
+    return r;
+  });
+  if (document.hidden) pauseAll(true);
+}
+
+function onMsg(r, m) {
+  if (!run || !run.lanes.includes(r)) return;
+  const l = r.l, t = (performance.now() - run.start) / 1000;
+  if (m.type === 'ready') {
+    r.nParams = m.nParams;
+    // the caption promises the same capacity: check it, out loud
+    if (run.lanes.every(x => x.nParams)) {
+      const n = run.lanes.map(x => x.nParams), same = n.every(v => v === n[0]);
+      $('cap').textContent = fmt(n[0]);
+      setTimeout(() => logLine(same
+        ? `capacity check: ${n.length} × ${fmt(n[0])} trainable float32 params (${fmt(n[0] * 4)} bytes each) ✓`
+        : `capacity check FAILED: ${n.map(fmt).join(' / ')} params`, same ? 'hd' : 'ev'));
+    }
+    logLine(`${tag(l)} ${l.log} · ${fmt(m.nParams)} params · Adam(lr=${l.cfg.lr})`);
+  } else if (m.type === 'frame' && !run.done) {   // frames still in flight after the finish are dropped
+    Object.assign(r, { psnr: m.psnr, step: m.step, loss: m.loss, gnorm: m.gnorm, lr: m.lr, trainMs: m.trainMs });
+    r.hist.push([t, m.psnr]);
+    r.guess = m.rgba;
+    l.ctx.putImageData(new ImageData(m.rgba, run.P.w, run.P.h), 0, 0);
+    l.psnrEl.innerHTML = `${m.psnr.toFixed(2)}<small> dB</small>`;
+    for (const s of SNAPS) if (t >= s && !run.snaps[l.key + s])
+      run.snaps[l.key + s] = new ImageData(new Uint8ClampedArray(m.rgba), run.P.w, run.P.h);
+    if (t - r.lastLog > 3 + Math.random()) {
+      r.lastLog = t;
+      const sps = m.step / Math.max(1e-3, m.trainMs / 1000);
+      logLine(`${tag(l)} step ${pad(fmt(m.step), 6)} loss ${m.loss.toExponential(2)}  psnr ${m.psnr.toFixed(2)}  lr ${m.lr.toExponential(1)}  ‖g‖ ${m.gnorm.toExponential(1)}  ${Math.round(sps)} it/s`);
+    }
+    rank();
+  }
+}
+
+function rank() {
+  const rs = run.lanes.filter(r => r.psnr != null).sort((a, b) => b.psnr - a.psnr);
+  if (!rs.length) return;
+  const lead = rs[0];
+  if (run.leader && lead !== run.leader && lead.psnr - run.leader.psnr > .02 && performance.now() - run.start > 3000) {
+    const t = (performance.now() - run.start) / 1000;
+    logLine(`[overtake] ${lead.l.name} passes ${run.leader.l.name} at ${t.toFixed(0)}s · ${lead.psnr.toFixed(2)} vs ${run.leader.psnr.toFixed(2)} dB`, 'ev');
+  }
+  if (!run.leader || lead.psnr - run.leader.psnr > .02) run.leader = lead;
+  rs.forEach((r, i) => {
+    r.l.rankEl.textContent = `#${i + 1}`;
+    r.l.el.classList.toggle('lead', r === run.leader);
+  });
+  $('board').innerHTML = rs.map((r, i) => `<tr class="${r === run.leader ? 'lead' : ''}">
+    <td class="dim">${i + 1}</td><td><span class="dot" style="--c:${r.l.color}"></span>${r.l.name}</td>
+    <td class="r">${r.psnr.toFixed(2)}</td><td class="r dim">${i ? (r.psnr - lead.psnr).toFixed(2) : '—'}</td>
+    <td class="r dim">${fmt(r.step)}</td><td class="r dim">${Math.round(r.step / Math.max(1e-3, r.trainMs / 1000))}/s</td></tr>`).join('');
+  const L = run.leader;
+  $('tiny').innerHTML = `<b style="--c:${L.l.color}">${L.l.name}</b> leads · ${L.psnr.toFixed(1)} dB · step ${fmt(L.step)} · <em>${run.P.title}</em>`;
+}
+
+function finish() {
+  run.done = true;
+  run.lanes.forEach(r => r.worker.postMessage({ cmd: 'pause' }));
+  const w = run.leader; if (!w) return;
+  const t = ((performance.now() - run.start) / 1000).toFixed(1);
+  logLine(`done in ${t}s · winner: ${w.l.name} · ${w.psnr.toFixed(2)} dB with ${fmt(w.nParams)} numbers for ${fmt(run.P.w * run.P.h * 3)} colour values`, 'ev');
+  $('winner').style.setProperty('--c', w.l.color);
+  $('winner').textContent = `winner: ${w.l.name} · ${w.psnr.toFixed(2)} dB · ${fmt(w.step)} steps`;
+  const strip = $('strip'); strip.innerHTML = '';
+  for (const s of SNAPS) {
+    const snap = run.snaps[w.l.key + s]; if (!snap) continue;
+    const f = document.createElement('figure'), c = document.createElement('canvas');
+    c.width = run.P.w; c.height = run.P.h; c.getContext('2d').putImageData(snap, 0, 0);
+    f.appendChild(c); f.insertAdjacentHTML('beforeend', `<figcaption>${s}s</figcaption>`);
+    strip.appendChild(f);
+  }
+  const tf = document.createElement('figure'), tc = document.createElement('canvas');
+  tc.width = run.P.w; tc.height = run.P.h; tc.getContext('2d').drawImage($('target'), 0, 0);
+  tf.appendChild(tc); tf.insertAdjacentHTML('beforeend', '<figcaption>target</figcaption>');
+  strip.appendChild(tf);
+  // per-pixel error of every network's final guess: bright where it is still wrong
+  for (const r of run.lanes) {
+    if (!r.guess) continue;
+    const N = run.P.w * run.P.h; r.err = new ImageData(run.P.w, run.P.h); r.final = new ImageData(r.guess, run.P.w, run.P.h);
+    for (let i = 0; i < N; i++) {
+      let e = 0; for (let c = 0; c < 3; c++) e += Math.abs(r.guess[i * 4 + c] - run.bytes[i * 3 + c]);
+      const v = Math.min(1, (e / 3 / 255 * 6) ** .7);
+      r.err.data.set([11 + v * 244, 18 + v * 162, 13 + v * 40, 255], i * 4);
+    }
+  }
+  $('stage').classList.add('done');
+}
+
+let showingErr = null;
+function showErrors(on) {
+  if (on === showingErr) return;
+  showingErr = on;
+  for (const r of run.lanes) {
+    const sub = r.l.el.querySelector('.sub');
+    sub.textContent = on ? 'error map · brighter = more wrong' : r.l.sub;
+    sub.classList.toggle('err', on);
+    const img = on ? r.err : r.final;
+    if (img) r.l.ctx.putImageData(img, 0, 0);
+  }
+}
+
+function drawChart() {
+  const cv = $('chart'), dpr = devicePixelRatio || 1;
+  const w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+  if (!w || !h) return;
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const c = cv.getContext('2d'); c.clearRect(0, 0, w, h);
+  const all = run.lanes.flatMap(r => r.hist.map(p => p[1]));
+  const lo = Math.floor(Math.min(14, ...all)), hi = Math.ceil(Math.max(24, ...all) + .5);
+  const tmax = (RUN_MS - RESULTS_MS) / 1000, padL = 34 * dpr, padB = 16 * dpr;
+  const X = t => padL + (w - padL - 4) * Math.min(1, t / tmax), Y = v => (h - padB) * (1 - (v - lo) / (hi - lo)) + 2;
+  c.font = `${10 * dpr}px ui-monospace, monospace`; c.fillStyle = '#55805f'; c.strokeStyle = '#1d3323'; c.lineWidth = 1;
+  for (let v = Math.ceil(lo / 4) * 4; v <= hi; v += 4) {
+    c.beginPath(); c.moveTo(padL, Y(v)); c.lineTo(w, Y(v)); c.stroke(); c.fillText(v, 2, Y(v) + 4 * dpr);
+  }
+  c.fillText('0s', padL, h - 3); c.fillText(`${tmax}s`, w - 30 * dpr, h - 3);
+  for (const r of run.lanes) {
+    if (r.hist.length < 2) continue;
+    c.strokeStyle = r.l.color; c.lineWidth = (r === run.leader ? 2.5 : 1.5) * dpr; c.beginPath();
+    r.hist.forEach(([t, v], i) => i ? c.lineTo(X(t), Y(v)) : c.moveTo(X(t), Y(v)));
+    c.stroke();
+  }
+}
+
+const mmss = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+let hiddenAt = 0;
+function pauseAll(p) { run && !run.done && run.lanes.forEach(r => r.worker.postMessage({ cmd: p ? 'pause' : 'resume' })); }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = performance.now(); pauseAll(true); }
+  else if (run) { run.start += performance.now() - hiddenAt; pauseAll(false); }
+});
+
+// going fullscreen on the monitor starts a fresh race, so viewers see it from noise
+let wasBig = innerWidth > 900;
+new ResizeObserver(() => {
+  const big = innerWidth > 900;
+  if (big && !wasBig && run && performance.now() - run.start > 5000) { painting = PAINTINGS.indexOf(run.P); startRun(); }
+  wasBig = big;
+}).observe(document.body);
+
+function tick() {
+  if (!document.hidden && run) {
+    const el = performance.now() - run.start;
+    if (el > RUN_MS) startRun();
+    else {
+      if (!run.done && el > RUN_MS - RESULTS_MS) finish();
+      if (run.done) showErrors(Math.floor((el - (RUN_MS - RESULTS_MS)) / 4000) % 2 === 0);
+      $('clock').textContent = `${mmss(el / 1000)} / ${mmss(RUN_MS / 1000)}`;
+      $('foot').textContent = run.done ? 'results' : `training · ${mmss(el / 1000)}`;
+      if (!run.done) drawChart();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+startRun();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
