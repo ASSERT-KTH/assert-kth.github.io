@@ -27,6 +27,23 @@ FONTS = {
 }
 
 
+# A subset is a modified font, and the OFL forbids giving it a Reserved Font
+# Name. Nanum Gothic Coding reserves "Nanum" and "NanumGothic", so its subsets
+# get a new name (also used in index.html). See OFL.txt.
+RENAME = {
+    "NanumGothicCoding-Regular.ttf": ("Coding KR", "Regular"),
+    "NanumGothicCoding-Bold.ttf": ("Coding KR", "Bold"),
+}
+
+
+def rename(font, names):
+    family, style = names
+    ps = f"{family.replace(' ', '')}-{style}"
+    for nid, value in {1: family, 3: ps, 4: f"{family} {style}", 6: ps, 16: family}.items():
+        font["name"].removeNames(nameID=nid)
+        font["name"].setName(value, nid, 3, 1, 0x409)
+
+
 def chars_by_lang(html):
     """Group the CJK characters of each AWARDS entry by its lang tag."""
     groups = {"latin": set(map(chr, range(0x20, 0x7F)))}
@@ -49,10 +66,13 @@ def main(src):
         opts = subset.Options()
         opts.flavor = "woff2"
         opts.layout_features = ["*"]
+        opts.name_IDs = ["*"]  # keep the copyright and OFL license entries
         font = subset.load_font(str(Path(src) / name), opts)
         sub = subset.Subsetter(opts)
         sub.populate(text="".join(sorted(groups.get(group, ()))))
         sub.subset(font)
+        if name in RENAME:
+            rename(font, RENAME[name])
         subset.save_font(font, str(HERE / out), opts)
         print(f"{out}: {len(groups.get(group, ()))} chars, {(HERE / out).stat().st_size // 1024} KB")
 

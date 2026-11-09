@@ -7,24 +7,25 @@
     --bg: #0b120d; --ink: #d8f5e0; --ink-2: #8fbf9f; --ink-3: #55805f;
     --green: #35e07c; --green-dim: #1f9e57; --amber: #e0b435; --line: #1d3323;
   }
-  /* subsets of the glyphs in AWARDS, so the TV needs no local CJK fonts;
+  /* subsets of the glyphs in AWARDS, so the TV needs no local CJK fonts
+     ("Coding KR" is Nanum Gothic Coding, renamed as its OFL requires; see fonts/OFL.txt);
      rebuild with fonts/subset.py after you add winners */
   @font-face { font-family: "JetBrains Mono"; src: url(fonts/latin.woff2) format("woff2"); font-weight: 100 900; }
   @font-face { font-family: "Noto Sans JP"; src: url(fonts/ja.woff2) format("woff2"); font-weight: 100 900; }
   @font-face { font-family: "Noto Sans SC"; src: url(fonts/zh.woff2) format("woff2"); font-weight: 100 900; }
-  @font-face { font-family: "Nanum Gothic Coding"; src: url(fonts/ko-400.woff2) format("woff2"); font-weight: 400; }
-  @font-face { font-family: "Nanum Gothic Coding"; src: url(fonts/ko-700.woff2) format("woff2"); font-weight: 700; }
+  @font-face { font-family: "Coding KR"; src: url(fonts/ko-400.woff2) format("woff2"); font-weight: 400; }
+  @font-face { font-family: "Coding KR"; src: url(fonts/ko-700.woff2) format("woff2"); font-weight: 700; }
   :root { --mono: ui-monospace, "SF Mono", Menlo, Consolas, "JetBrains Mono"; }
   * { margin: 0; box-sizing: border-box; }
   body {
     background: var(--bg); color: var(--ink);
-    font-family: var(--mono), "Noto Sans SC", "Noto Sans JP", "Nanum Gothic Coding", monospace;
+    font-family: var(--mono), "Noto Sans SC", "Noto Sans JP", "Coding KR", monospace;
     height: 100vh; overflow: hidden;
   }
   /* the script sets lang per award; Han glyph shapes differ between ja and zh */
   :lang(ja) { font-family: var(--mono), "Noto Sans JP", monospace; }
   :lang(zh) { font-family: var(--mono), "Noto Sans SC", monospace; }
-  :lang(ko) { font-family: var(--mono), "Nanum Gothic Coding", monospace; }
+  :lang(ko) { font-family: var(--mono), "Coding KR", monospace; }
   #stars { position: fixed; inset: 0; width: 100%; height: 100%; }
   /* sized against the cell's own frame (container units), so the timeline
      fills the fullscreen monitor scene and stays compact in the grid tile */
