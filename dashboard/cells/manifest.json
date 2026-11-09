@@ -99,6 +99,13 @@
       "role": "Research Assistant",
       "cell": false,
       "image": "/img/people/piyusha.jpg"
+    },
+    {
+      "id": "sinvel",
+      "name": "Singvalliyappa Velayutham",
+      "role": "Research Assistant",
+      "cell": true,
+      "image": "/img/people/sinvel.jpg"
     }
   ]
 }
